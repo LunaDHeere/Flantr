@@ -6,11 +6,18 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.flantr.ui.auth.AuthScreen
+import com.example.flantr.ui.navigation.Screen
 import com.example.flantr.ui.theme.FlantrTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,11 +26,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             FlantrTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ){
+                    FlantrApp()
                 }
             }
         }
@@ -31,17 +38,16 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+@Preview
+fun FlantrApp(){
+    val navController = rememberNavController()
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    FlantrTheme {
-        Greeting("Android")
+    NavHost(navController = navController, startDestination = "auth"){
+        composable("auth"){
+            AuthScreen(navController = navController)
+        }
+        composable(Screen.Home.route) {
+            Text("Welcome to the App!")
+        }
     }
 }

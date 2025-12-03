@@ -1,5 +1,7 @@
 [versions]
+activityComposeVersion = "1.9.3"
 agp = "8.7.3"
+coreKtxVersion = "1.15.0"
 kotlin = "2.0.0"
 coreKtx = "1.17.0"
 junit = "4.13.2"
@@ -8,13 +10,22 @@ espressoCore = "3.7.0"
 lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.12.0"
 composeBom = "2025.11.01"
+lifecycleRuntimeKtxVersion = "2.8.7"
 materialIconsExtended = "1.7.8"
+materialIconsExtendedVersion = "1.7.5"
 navigationCompose = "2.9.6"
+navigationComposeVersion = "2.8.3"
 
 [libraries]
+androidx-activity-compose-v193 = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-core-ktx-v1150 = { module = "androidx.core:core-ktx", version.ref = "coreKtxVersion" }
+androidx-lifecycle-runtime-ktx-v287 = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtxVersion" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleRuntimeKtxVersion" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
+androidx-material-icons-extended-v175 = { module = "androidx.compose.material:material-icons-extended", version.ref = "materialIconsExtendedVersion" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
+androidx-navigation-compose-v283 = { module = "androidx.navigation:navigation-compose", version.ref = "navigationComposeVersion" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -28,6 +39,13 @@ androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+material3 = { module = "androidx.compose.material3:material3" }
+ui = { module = "androidx.compose.ui:ui" }
+ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
+ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
