@@ -5,6 +5,7 @@ import com.example.flantr.data.model.Route
 import com.example.flantr.data.model.Stop
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 data class HomeUiState (
     //TODO: add logic to save a route to the profile of a user (should be done with a list maybe?)
@@ -34,7 +35,7 @@ class HomeViewModel: ViewModel(){
             Route("s1", "Weekend Downtown Walk", "Custom", "My favorite spots", 150, "2.1 miles", mockStops),
             Route("s2", "Hidden Gems", "Exploration", "Off the beaten path", 180, "3.2 miles", mockStops)
         )
-        val popularRoutes = listOf(
+        val popular = listOf(
             Route(
                 id = "1",
                 name = "Coffee & Books Morning",
@@ -66,5 +67,11 @@ class HomeViewModel: ViewModel(){
                 imageUrl = "https://images.unsplash.com/photo-1529686398651-b8112f4bb98c?w=1080"
             )
         )
+        _uiState.update { currentState ->
+            currentState.copy(
+                savedRoutes = saved,
+                popularRoutes = popular
+            )
+        }
     }
 }

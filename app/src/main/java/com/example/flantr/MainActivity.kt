@@ -17,6 +17,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.flantr.ui.auth.AuthScreen
+import com.example.flantr.ui.home.HomeScreen
 import com.example.flantr.ui.navigation.Screen
 import com.example.flantr.ui.theme.FlantrTheme
 
@@ -42,12 +43,12 @@ class MainActivity : ComponentActivity() {
 fun FlantrApp(){
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "auth"){
+    NavHost(navController = navController, startDestination = Screen.Home.route){
         composable("auth"){
             AuthScreen(navController = navController)
         }
         composable(Screen.Home.route) {
-            Text("Welcome to the App!")
+            HomeScreen(navController = navController)
         }
     }
 }
