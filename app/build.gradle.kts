@@ -41,6 +41,7 @@ android {
 
 dependencies {
 
+    implementation(libs.coil.compose) // this is to load images from the internet. It's called Coil!
     implementation(libs.androidx.core.ktx.v1150)
     implementation(libs.androidx.lifecycle.runtime.ktx.v287)
     implementation(libs.androidx.activity.compose.v193)
