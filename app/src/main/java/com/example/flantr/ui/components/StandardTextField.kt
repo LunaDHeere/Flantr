@@ -16,7 +16,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun FlantrTextField(
+fun StandardTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
