@@ -17,5 +17,5 @@ data class Stop(
     val address: String,
     val description: String,
     val estimatedTimeMinutes: Int,
-    val notes: String? = null
+    val notes: String? = null,
 )
