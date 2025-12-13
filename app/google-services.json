@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "710071423364",
+    "project_id": "flantr-8d0e1",
+    "storage_bucket": "flantr-8d0e1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:710071423364:android:b9836021a80f05e4fc4dd1",
+        "android_client_info": {
+          "package_name": "com.example.flantr"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAdT-SA1CLqkiY9mwt2ev0vb0w5-DKcqrM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
