@@ -1,59 +1,83 @@
 package com.example.flantr.ui.profile
-import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 
-// so this was an idea from figma ai but i have NO CLUE HOW TF I'M GOING TO DO THAT WITH
-// THE GOOGLE MAPS THING
-enum class WalkingPace { SLOW, MODERATE, FAST }
-enum class AppTheme { LIGHT, DARK, AUTO }
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.flantr.data.model.User
+import com.example.flantr.data.repository.UserRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 data class ProfileUiState(
-    // TODO: there should be a place to change the password
-
-    //TODO: add logic to change password SECURELY (adding some security checks like
-    // inputting the previous password before continuing, etc.
-    val name: String = "Alex Morgan",
-    val email: String = "alex.morgan@email.com",
-    val memberSince: String = "January 2024",
-    val tripCount: Int = 12,
-    val placesVisited: Int = 47,
-
-    // Once again, a VERY COOL idea but absolutely NO CLUE how i'm going to execute it hihihi
-    val includePublicTransport: Boolean = true,
-    val walkingPace: WalkingPace = WalkingPace.MODERATE,
-    val maxWalkingDistance: Float = 5f, // this is one of the few things i do think will be possible
-    // maybe i'm not seeing how complicated this is da is ook een ding natuurlijk
+    val id: String = "",
+    val name: String = "",
+    val email: String = "",
+    val memberSince: String = "", // UI wants a String
     val accessibilityMode: Boolean = false,
     val avoidStairs: Boolean = false,
-
-    //TODO: add some notifications logic and ui
-    //TODO: when you finally make Colors a seperate theme we CAN FINALLY MAKE A DARK THEME WOOPWOOP
-    // so make that colors theme + logic to change themes thanks <3
+    val tripCount: Int = 0,
+    val placesVisited: Int = 0
 )
-class ProfileViewModel : ViewModel() {
+
+class ProfileViewModel(private val repo: UserRepository = UserRepository()) : ViewModel() {
+
     private val _uiState = MutableStateFlow(ProfileUiState())
-    val uiState = _uiState.asStateFlow()
+    val uiState: StateFlow<ProfileUiState> = _uiState
 
-    fun togglePublicTransport() {
-        _uiState.update { it.copy(includePublicTransport = !it.includePublicTransport) }
+    init {
+        loadUser()
     }
 
-    fun setWalkingPace(pace: WalkingPace) {
-        _uiState.update { it.copy(walkingPace = pace) }
-    }
-
-    fun setMaxWalkingDistance(distance: Float) {
-        _uiState.update { it.copy(maxWalkingDistance = distance) }
+    private fun loadUser() {
+        viewModelScope.launch {
+            val user = repo.getCurrentUser()
+            if (user != null) {
+                _uiState.value = user.toUiState()
+            }
+        }
     }
 
     fun toggleAccessibilityMode() {
-        _uiState.update { it.copy(accessibilityMode = !it.accessibilityMode) }
+        // Toggle based on CURRENT state, not the last emitted value
+        val current = _uiState.value
+        val newValue = !current.accessibilityMode
+
+        // Optimistic update (update UI immediately)
+        _uiState.value = current.copy(accessibilityMode = newValue)
+
+        viewModelScope.launch {
+            repo.updateUser(current.id, mapOf("accessibilityMode" to newValue))
+        }
     }
 
     fun toggleAvoidStairs() {
-        _uiState.update { it.copy(avoidStairs = !it.avoidStairs) }
-    }
+        val current = _uiState.value
+        val newValue = !current.avoidStairs
 
+        _uiState.value = current.copy(avoidStairs = newValue)
+
+        viewModelScope.launch {
+            repo.updateUser(current.id, mapOf("avoidStairs" to newValue))
+        }
+    }
+}
+
+// FIX: Convert the Long timestamp to a formatted String
+private fun User.toUiState(): ProfileUiState {
+    val dateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+    val dateString = dateFormatter.format(Date(memberSince))
+
+    return ProfileUiState(
+        id = id,
+        name = name,
+        email = email,
+        memberSince = dateString, // Pass the converted string here
+        accessibilityMode = accessibilityMode,
+        avoidStairs = avoidStairs,
+        tripCount = tripCount,
+        placesVisited = placesVisited
+    )
 }
