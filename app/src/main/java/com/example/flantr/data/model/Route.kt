@@ -7,9 +7,11 @@ data class Route(
     val description: String = "",
     val totalTimeMinutes: Int = 0,
     val distance: String = "",
-    val stops: List<Stop> = emptyList(), // Firebase handles lists automatically
+    val stops: List<Stop> = emptyList(),
     val imageUrl: String? = null,
-    val authorId: String = "" // Good practice: know who created it
+    val authorId: String = "",
+    val iconId: String = "place",
+    val popularityScore: Int = 0 // to use on the homescreen and make the logic somewhat easier
 )
 
 data class Stop(

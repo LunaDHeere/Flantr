@@ -11,8 +11,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -21,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.flantr.data.model.Collection
 import com.example.flantr.data.model.Route
 import com.example.flantr.ui.navigation.Screen
 import com.example.flantr.ui.profile.components.FlantrSwitch
@@ -30,11 +34,6 @@ import com.example.flantr.ui.profile.components.SettingsRow
 import com.example.flantr.ui.theme.BackgroundGradient
 import com.example.flantr.ui.theme.BluePrimary
 import com.example.flantr.ui.theme.PurplePrimary
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import com.example.flantr.data.model.Collection
 import com.example.flantr.ui.theme.PrimaryGradient
 
 @Composable
@@ -43,6 +42,15 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // --- Dialogs ---
+    if (uiState.showEditProfileDialog) {
+        EditProfileDialog(
+            currentName = uiState.name,
+            onDismiss = { viewModel.toggleEditProfileDialog(false) },
+            onSave = { newName -> viewModel.updateName(newName) }
+        )
+    }
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -68,21 +76,34 @@ fun ProfileScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             // 1. Profile Header
-            item { ProfileHeader(uiState) }
+            item {
+                Column {
+                    ProfileHeader(uiState)
+                    Spacer(Modifier.height(12.dp))
+                    // Edit Profile Button
+                    OutlinedButton(
+                        onClick = { viewModel.toggleEditProfileDialog(true) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Edit Profile")
+                    }
+                }
+            }
 
-            //1.5 Collections
-
-            item{
+            // 1.5 Collections
+            item {
                 CollectionsSection(
                     collections = uiState.collections,
-                    onCreateClick = {viewModel.toggleCreateDialog(true)},
-                    onEditClick =  { /*TODO: Add logic here*/ },
-                    onDeleteClick = { viewModel.deleteCollection(it)}
+                    onCreateClick = { viewModel.toggleCreateDialog(true) },
+                    onEditClick = { /*TODO: Add logic here*/ },
+                    onDeleteClick = { viewModel.deleteCollection(it) }
                 )
             }
 
-            //1.9 Created Routes
-
+            // 1.9 Created Routes
             item {
                 CreatedRoutesSection(
                     routes = uiState.createdRoutes,
@@ -92,8 +113,7 @@ fun ProfileScreen(
 
             // 2. Transportation
             item {
-                ProfileSection (title = "Transportation", icon = Icons.Default.DirectionsBus) {
-                    // Toggle
+                ProfileSection(title = "Transportation", icon = Icons.Default.DirectionsBus) {
                     SettingsRow(
                         title = "Include Public Transport",
                         subtitle = "Show bus, train, and metro options",
@@ -105,7 +125,6 @@ fun ProfileScreen(
                     )
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Pace Selector
                     Text("Walking Pace", fontWeight = FontWeight.Medium, modifier = Modifier.padding(bottom = 8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         PaceButton("Slow", "slow", uiState.walkingPace) { viewModel.setWalkingPace(it) }
@@ -113,7 +132,7 @@ fun ProfileScreen(
                         PaceButton("Fast", "fast", uiState.walkingPace) { viewModel.setWalkingPace(it) }
                     }
                     Text(
-                        text = when(uiState.walkingPace) {
+                        text = when (uiState.walkingPace) {
                             "slow" -> "Estimated 2 mph / 3 km/h"
                             "moderate" -> "Estimated 3 mph / 5 km/h"
                             "fast" -> "Estimated 4 mph / 6.5 km/h"
@@ -126,13 +145,12 @@ fun ProfileScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Distance Slider
                     Text("Max Walking Distance: ${uiState.maxWalkingDistance.toInt()} miles", fontWeight = FontWeight.Medium)
                     Slider(
                         value = uiState.maxWalkingDistance,
                         onValueChange = { viewModel.setMaxDistance(it) },
                         valueRange = 1f..10f,
-                        steps = 17, // 0.5 steps
+                        steps = 17,
                         colors = SliderDefaults.colors(
                             thumbColor = PurplePrimary,
                             activeTrackColor = PurplePrimary
@@ -150,7 +168,7 @@ fun ProfileScreen(
 
             // 3. Accessibility
             item {
-                ProfileSection (title = "Accessibility", icon = Icons.Default.AccessibilityNew) {
+                ProfileSection(title = "Accessibility", icon = Icons.Default.AccessibilityNew) {
                     SettingsRow(
                         title = "Accessibility Mode",
                         subtitle = "Prioritize wheelchair-accessible routes",
@@ -175,7 +193,7 @@ fun ProfileScreen(
 
             // 4. Route Preferences
             item {
-                ProfileSection (title = "Route Preferences", icon = Icons.Default.Map) {
+                ProfileSection(title = "Route Preferences", icon = Icons.Default.Map) {
                     SettingsRow(
                         title = "Prefer Scenic Routes",
                         subtitle = "Choose routes through parks and scenic areas",
@@ -190,7 +208,7 @@ fun ProfileScreen(
 
             // 5. Notifications
             item {
-                ProfileSection (title = "Notifications", icon = Icons.Default.Notifications) {
+                ProfileSection(title = "Notifications", icon = Icons.Default.Notifications) {
                     SettingsRow("Route Reminders", "Get notified about upcoming trips") {
                         FlantrSwitch(uiState.notifyRouteReminders) { viewModel.updateBoolean("notifyRouteReminders", !uiState.notifyRouteReminders) }
                     }
@@ -207,7 +225,7 @@ fun ProfileScreen(
 
             // 6. Appearance
             item {
-                ProfileSection (title = "Appearance", icon = Icons.Default.LightMode) {
+                ProfileSection(title = "Appearance", icon = Icons.Default.LightMode) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         ThemeButton("Light", "light", Icons.Default.LightMode, uiState.appTheme) { viewModel.setTheme(it) }
                         ThemeButton("Dark", "dark", Icons.Default.DarkMode, uiState.appTheme) { viewModel.setTheme(it) }
@@ -246,23 +264,61 @@ fun ProfileScreen(
                 }
                 Spacer(modifier = Modifier.height(40.dp))
             }
-
-
         }
     }
 }
 
+// --- EDIT PROFILE DIALOG ---
+
+@Composable
+fun EditProfileDialog(
+    currentName: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
+) {
+    var name by remember { mutableStateOf(currentName) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Profile") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Display Name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onSave(name) }, enabled = name.isNotBlank()) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(16.dp)
+    )
+}
+
+// --- HELPER COMPONENTS (Unchanged) ---
 @Composable
 fun RowScope.PaceButton(label: String, value: String, currentValue: String, onClick: (String) -> Unit) {
     val isSelected = value == currentValue
-    val bgColor = if(isSelected) Color(0xFFFAF5FF) else Color.White
-    val borderColor = if(isSelected) PurplePrimary else Color(0xFFD1D5DB)
-    val textColor = if(isSelected) PurplePrimary else Color.Gray
+    val bgColor = if (isSelected) Color(0xFFFAF5FF) else Color.White
+    val borderColor = if (isSelected) PurplePrimary else Color(0xFFD1D5DB)
+    val textColor = if (isSelected) PurplePrimary else Color.Gray
 
     Box(
         modifier = Modifier
             .weight(1f)
-            .border(if(isSelected) 2.dp else 1.dp, borderColor, RoundedCornerShape(12.dp))
+            .border(if (isSelected) 2.dp else 1.dp, borderColor, RoundedCornerShape(12.dp))
             .clip(RoundedCornerShape(12.dp))
             .background(bgColor)
             .clickable { onClick(value) }
@@ -272,17 +328,18 @@ fun RowScope.PaceButton(label: String, value: String, currentValue: String, onCl
         Text(label, color = textColor, fontWeight = FontWeight.Medium)
     }
 }
+
 @Composable
 fun RowScope.ThemeButton(label: String, value: String, icon: ImageVector, currentValue: String, onClick: (String) -> Unit) {
     val isSelected = value == currentValue
-    val bgColor = if(isSelected) Color(0xFFFAF5FF) else Color.White
-    val borderColor = if(isSelected) PurplePrimary else Color(0xFFD1D5DB)
-    val contentColor = if(isSelected) PurplePrimary else Color.Gray
+    val bgColor = if (isSelected) Color(0xFFFAF5FF) else Color.White
+    val borderColor = if (isSelected) PurplePrimary else Color(0xFFD1D5DB)
+    val contentColor = if (isSelected) PurplePrimary else Color.Gray
 
     Column(
         modifier = Modifier
             .weight(1f)
-            .border(if(isSelected) 2.dp else 1.dp, borderColor, RoundedCornerShape(12.dp))
+            .border(if (isSelected) 2.dp else 1.dp, borderColor, RoundedCornerShape(12.dp))
             .clip(RoundedCornerShape(12.dp))
             .background(bgColor)
             .clickable { onClick(value) }
@@ -311,109 +368,17 @@ fun SettingsLink(title: String, icon: ImageVector) {
 }
 
 @Composable
-fun CreatedRouteItem(route: Route) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(1.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Icon
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFEFF6FF)), // Blue-50
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.Map, contentDescription = null, tint = BluePrimary, modifier = Modifier.size(20.dp))
-            }
-
-            Spacer(Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(route.name, fontWeight = FontWeight.Bold)
-                Text("${route.stops.size} stops • ${route.distance}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-            }
-
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.LightGray)
-        }
-    }
-}
-
-@Composable
-fun CollectionsSection(
-    collections: List<Collection>,
-    onCreateClick: () -> Unit,
-    onEditClick: (Collection) -> Unit,
-    onDeleteClick: (String) -> Unit
-) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(Modifier.padding(24.dp)) {
-            // Header
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.FolderSpecial, contentDescription = null, tint = PurplePrimary)
-                    Spacer(Modifier.width(8.dp))
-                    Text("My Collections", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                }
-
-                // New Collection Button (Gradient)
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(PrimaryGradient)
-                        .clickable { onCreateClick() }
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("New", color = Color.White, style = MaterialTheme.typography.labelSmall)
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            if (collections.isEmpty()) {
-                EmptyCollectionsState(onCreateClick)
-            } else {
-                collections.forEach { col ->
-                    CollectionItem(col, onEditClick, onDeleteClick)
-                    Spacer(Modifier.height(12.dp))
-                }
-            }
-        }
-    }
-}
-
-@Composable
 fun CollectionItem(
     collection: Collection,
     onEditClick: (Collection) -> Unit,
     onDeleteClick: (String) -> Unit
 ) {
-    // Figma Color Mapping logic
     val (bg, text, border) = when (collection.color) {
         "purple" -> Triple(Color(0xFFFAF5FF), Color(0xFF7E22CE), Color(0xFFE9D5FF))
         "green" -> Triple(Color(0xFFF0FDF4), Color(0xFF15803D), Color(0xFFBBF7D0))
         "pink" -> Triple(Color(0xFFFDF2F8), Color(0xFFBE185D), Color(0xFFFBCFE8))
         "blue" -> Triple(Color(0xFFEFF6FF), Color(0xFF1D4ED8), Color(0xFFBFDBFE))
-        else -> Triple(Color(0xFFF3F4F6), Color(0xFF374151), Color(0xFFE5E7EB)) // Gray default
+        else -> Triple(Color(0xFFF3F4F6), Color(0xFF374151), Color(0xFFE5E7EB))
     }
 
     Row(
@@ -440,16 +405,10 @@ fun CollectionItem(
         }
 
         Row {
-            IconButton(
-                onClick = { onEditClick(collection) },
-                modifier = Modifier.size(32.dp)
-            ) {
+            IconButton(onClick = { onEditClick(collection) }, modifier = Modifier.size(32.dp)) {
                 Icon(Icons.Outlined.Edit, contentDescription = "Edit", tint = Color.Gray, modifier = Modifier.size(18.dp))
             }
-            IconButton(
-                onClick = { onDeleteClick(collection.id) },
-                modifier = Modifier.size(32.dp)
-            ) {
+            IconButton(onClick = { onDeleteClick(collection.id) }, modifier = Modifier.size(32.dp)) {
                 Icon(Icons.Outlined.Delete, contentDescription = "Delete", tint = Color.Red.copy(alpha = 0.7f), modifier = Modifier.size(18.dp))
             }
         }
@@ -461,7 +420,7 @@ fun EmptyCollectionsState(onCreateClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Color(0xFFE5E7EB), RoundedCornerShape(12.dp)) // Dashed border simulated by solid light gray
+            .border(1.dp, Color(0xFFE5E7EB), RoundedCornerShape(12.dp))
             .padding(32.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -481,13 +440,58 @@ fun EmptyCollectionsState(onCreateClick: () -> Unit) {
     }
 }
 
-// --- CREATED ROUTES SECTION ---
+@Composable
+fun CollectionsSection(
+    collections: List<Collection>,
+    onCreateClick: () -> Unit,
+    onEditClick: (Collection) -> Unit,
+    onDeleteClick: (String) -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(24.dp)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.FolderSpecial, contentDescription = null, tint = PurplePrimary)
+                    Spacer(Modifier.width(8.dp))
+                    Text("My Collections", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(PrimaryGradient)
+                        .clickable { onCreateClick() }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("New", color = Color.White, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            if (collections.isEmpty()) {
+                EmptyCollectionsState(onCreateClick)
+            } else {
+                collections.forEach { col ->
+                    CollectionItem(col, onEditClick, onDeleteClick)
+                    Spacer(Modifier.height(12.dp))
+                }
+            }
+        }
+    }
+}
 
 @Composable
-fun CreatedRoutesSection(
-    routes: List<Route>,
-    onRouteClick: (String) -> Unit
-) {
+fun CreatedRoutesSection(routes: List<Route>, onRouteClick: (String) -> Unit) {
     Column {
         Text(
             "Routes You Created",
@@ -495,7 +499,6 @@ fun CreatedRoutesSection(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 12.dp)
         )
-
         if (routes.isEmpty()) {
             Text("You haven't created any routes yet.", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
         } else {
@@ -513,36 +516,17 @@ fun CreatedRouteItem(route: Route, onClick: () -> Unit) {
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(1.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Icon Background
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFEFF6FF)), // Blue-50
-                contentAlignment = Alignment.Center
-            ) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(Color(0xFFEFF6FF)), contentAlignment = Alignment.Center) {
                 Icon(Icons.Default.Map, contentDescription = null, tint = Color(0xFF3B82F6), modifier = Modifier.size(20.dp))
             }
-
             Spacer(Modifier.width(12.dp))
-
             Column(modifier = Modifier.weight(1f)) {
                 Text(route.name, fontWeight = FontWeight.Bold)
-                Text(
-                    "${route.stops.size} stops • ${route.distance}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
+                Text("${route.stops.size} stops • ${route.distance}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
             }
-
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.LightGray)
         }
     }

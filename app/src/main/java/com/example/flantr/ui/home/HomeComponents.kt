@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -117,12 +118,16 @@ fun HomeSectionHeader(title: String, icon: ImageVector) {
 }
 
 /* ---------- SAVED ROUTES ---------- */
-
 @Composable
-fun HomeSavedRouteItem(route: Route, onClick: () -> Unit) {
+fun HomeSavedRouteItem(
+    route: Route,
+    onRemove: () -> Unit,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(2.dp)
+        elevation = CardDefaults.cardElevation(2.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -130,10 +135,13 @@ fun HomeSavedRouteItem(route: Route, onClick: () -> Unit) {
         ) {
             Column(Modifier.weight(1f)) {
                 Text(route.name, fontWeight = FontWeight.Bold)
-                Text(route.description, style = MaterialTheme.typography.bodySmall, color = Color.Gray, maxLines = 1)
-
+                Text(
+                    route.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray,
+                    maxLines = 1
+                )
                 Spacer(Modifier.height(8.dp))
-
                 Row {
                     HomeBadgeInfo(Icons.Default.Place, "${route.stops.size} stops")
                     Spacer(Modifier.width(12.dp))
@@ -141,29 +149,44 @@ fun HomeSavedRouteItem(route: Route, onClick: () -> Unit) {
                 }
             }
 
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)
+            // Remove Button (Filled Heart)
+            IconButton(onClick = onRemove) {
+                Icon(
+                    imageVector = Icons.Default.Favorite,
+                    contentDescription = "Unsave",
+                    tint = Color(0xFFEF4444) // Red color
+                )
+            }
         }
     }
 }
-
 /* ---------- POPULAR ROUTES ---------- */
 
 @Composable
-fun HomePopularRouteCard(route: Route, onClick: () -> Unit) {
+fun HomePopularRouteCard(
+    route: Route,
+    isSaved: Boolean,
+    onToggleSave: () -> Unit,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+        elevation = CardDefaults.cardElevation(4.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column {
-            HomeRouteImage(route)
+            HomeRouteImage(route, isSaved, onToggleSave)
             HomeRouteContent(route, onClick)
         }
     }
 }
-
 @Composable
-private fun HomeRouteImage(route: Route) {
+private fun HomeRouteImage(
+    route: Route,
+    isSaved: Boolean,
+    onToggleSave: () -> Unit
+) {
     Box(modifier = Modifier.height(180.dp).fillMaxWidth()) {
         AsyncImage(
             model = route.imageUrl,
@@ -172,6 +195,7 @@ private fun HomeRouteImage(route: Route) {
             modifier = Modifier.fillMaxSize()
         )
 
+        // Stops Badge (Top Right)
         Surface(
             shape = RoundedCornerShape(100),
             color = Color.White.copy(alpha = 0.9f),
@@ -182,6 +206,26 @@ private fun HomeRouteImage(route: Route) {
                 style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
             )
+        }
+
+        // Bookmark Button (Top Left)
+        // Using a Surface for better visibility over images
+        Surface(
+            shape = RoundedCornerShape(50),
+            color = Color.White.copy(alpha = 0.8f),
+            modifier = Modifier.align(Alignment.TopStart).padding(12.dp)
+        ) {
+            IconButton(
+                onClick = onToggleSave,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = if (isSaved) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = "Bookmark",
+                    tint = if (isSaved) Color(0xFFEF4444) else Color.Gray,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
 }

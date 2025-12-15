@@ -42,10 +42,11 @@ data class ProfileUiState(
     // Appearance
     val appTheme: String = "auto",
 
-    //collections
+    // Collections & Routes
     val collections: List<Collection> = emptyList(),
     val createdRoutes: List<Route> = emptyList(),
-    val showCreateCollectionDialog: Boolean = false
+    val showCreateCollectionDialog: Boolean = false,
+    val showEditProfileDialog: Boolean = false
 )
 
 class ProfileViewModel(
@@ -66,7 +67,7 @@ class ProfileViewModel(
         viewModelScope.launch {
             val user = userRepo.getCurrentUser()
             user?.let {
-                _uiState.value = ProfileUiState(
+                _uiState.value = _uiState.value.copy(
                     id = it.id,
                     name = it.name.ifEmpty { "Unknown" },
                     email = it.email,
@@ -74,7 +75,6 @@ class ProfileViewModel(
                     tripCount = it.tripCount,
                     placesVisited = it.placesVisited,
 
-                    // Map new fields
                     includePublicTransport = it.includePublicTransport,
                     walkingPace = it.walkingPace,
                     maxWalkingDistance = it.maxWalkingDistance,
@@ -90,10 +90,29 @@ class ProfileViewModel(
         }
     }
 
+    // --- Profile Info Updates ---
+
+    fun toggleEditProfileDialog(show: Boolean) {
+        _uiState.update { it.copy(showEditProfileDialog = show) }
+    }
+
+    fun updateName(newName: String) {
+        val current = _uiState.value
+        if (newName.isNotBlank() && newName != current.name) {
+            _uiState.update { it.copy(name = newName) }
+            // Save to Firestore
+            viewModelScope.launch {
+                userRepo.updateUser(current.id, mapOf("name" to newName))
+            }
+        }
+        toggleEditProfileDialog(false)
+    }
+
+    // --- Preference Updates ---
+
     // Generic function to update any boolean field
     fun updateBoolean(field: String, value: Boolean) {
         val current = _uiState.value
-        // Update local state immediately for UI responsiveness
         _uiState.value = when(field) {
             "includePublicTransport" -> current.copy(includePublicTransport = value)
             "accessibilityMode" -> current.copy(accessibilityMode = value)
@@ -104,27 +123,28 @@ class ProfileViewModel(
             "notifyNearbyPlaces" -> current.copy(notifyNearbyPlaces = value)
             else -> current
         }
-        // Save to Firebase
         viewModelScope.launch { userRepo.updateUser(current.id, mapOf(field to value)) }
     }
 
     fun setWalkingPace(pace: String) {
         val current = _uiState.value
-        _uiState.value = current.copy(walkingPace = pace)
+        _uiState.update { it.copy(walkingPace = pace) }
         viewModelScope.launch { userRepo.updateUser(current.id, mapOf("walkingPace" to pace)) }
     }
 
     fun setMaxDistance(dist: Float) {
         val current = _uiState.value
-        _uiState.value = current.copy(maxWalkingDistance = dist)
+        _uiState.update { it.copy(maxWalkingDistance = dist) }
         viewModelScope.launch { userRepo.updateUser(current.id, mapOf("maxWalkingDistance" to dist)) }
     }
 
     fun setTheme(theme: String) {
         val current = _uiState.value
-        _uiState.value = current.copy(appTheme = theme)
+        _uiState.update { it.copy(appTheme = theme) }
         viewModelScope.launch { userRepo.updateUser(current.id, mapOf("appTheme" to theme)) }
     }
+
+    // --- Collections & Routes ---
 
     private fun loadCollections(){
         viewModelScope.launch {
@@ -132,6 +152,7 @@ class ProfileViewModel(
             _uiState.update { it.copy(collections = cols) }
         }
     }
+
     private fun loadCreatedRoutes(){
         viewModelScope.launch {
             val userId = userRepo.getCurrentUser()?.id ?: return@launch

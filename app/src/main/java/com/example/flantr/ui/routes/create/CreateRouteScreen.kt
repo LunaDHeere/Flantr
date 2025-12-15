@@ -35,6 +35,7 @@ fun CreateRouteScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    val context = androidx.compose.ui.platform.LocalContext.current
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
@@ -163,7 +164,7 @@ fun CreateRouteScreen(
                     isLast = index == uiState.stops.lastIndex,
                     isEditing = uiState.editingStopId == stop.id,
                     onToggleEdit = { viewModel.toggleEditStop(if (it) stop.id else null) },
-                    onUpdate = { updatedStop -> viewModel.updateStop(stop.id) { updatedStop } },
+                    onUpdate = { updatedStop -> viewModel.updateStop(stop.id, context) { updatedStop } },
                     onDelete = { viewModel.removeStop(stop.id) },
                     onMoveUp = { viewModel.moveStop(index, -1) },
                     onMoveDown = { viewModel.moveStop(index, 1) }

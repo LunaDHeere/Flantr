@@ -30,7 +30,7 @@ sealed class BottomNavItem(val route: String, val label: String, val icon: andro
     object Home : BottomNavItem("home", "Home", Icons.Default.Home)
     object Trips : BottomNavItem("trips", "Trips", Icons.Default.Explore)
     object Map : BottomNavItem("map", "Map", Icons.Default.Map)
-    object Favourites : BottomNavItem("favourites", "Favourites", Icons.Default.Favorite)
+    object Favourites : BottomNavItem("favouriteRoutes", "Favourites", Icons.Default.Favorite)
     object Account : BottomNavItem("profile", "Account", Icons.Default.Person)
 }
 

@@ -22,11 +22,14 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // Helper set for O(1) lookups to check if a route is saved
+    val savedRouteIds = remember(uiState.savedRoutes) {
+        uiState.savedRoutes.map { it.id }.toSet()
+    }
+
     Scaffold(
         topBar = {
-            HomeHeader(
-                onCreateRoute = { navController.navigate("createRoute") }
-            )
+            HomeHeader(onCreateRoute = { navController.navigate("createRoute") })
         }
     ) { padding ->
 
@@ -39,41 +42,38 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
 
-            item {
-                HomeHeroSection()
-            }
+            item { HomeHeroSection() }
 
+            // Saved Routes Section
             if (uiState.savedRoutes.isNotEmpty()) {
                 item {
-                    HomeSectionHeader(
-                        title = "My Saved Routes",
-                        icon = Icons.Default.Bookmark
-                    )
+                    HomeSectionHeader(title = "My Saved Routes", icon = Icons.Default.Bookmark)
                 }
 
                 items(uiState.savedRoutes) { route ->
-                    HomeSavedRouteItem(route) {
-                        navController.navigate("active_route/${route.id}")
-                    }
+                    HomeSavedRouteItem(
+                        route = route,
+                        onRemove = { viewModel.bookmarkRoute(route) },
+                        onClick = { navController.navigate("active_route/${route.id}") }
+                    )
                 }
             }
 
+            // Popular Routes Section
             item {
-                HomeSectionHeader(
-                    title = "Popular Routes",
-                    icon = Icons.Default.TrendingUp
-                )
+                HomeSectionHeader(title = "Popular Routes", icon = Icons.Default.TrendingUp)
             }
 
             items(uiState.popularRoutes) { route ->
-                HomePopularRouteCard(route) {
-                    navController.navigate("active_route/${route.id}")
-                }
+                HomePopularRouteCard(
+                    route = route,
+                    isSaved = savedRouteIds.contains(route.id),
+                    onToggleSave = { viewModel.bookmarkRoute(route) },
+                    onClick = { navController.navigate("active_route/${route.id}") }
+                )
             }
 
-            item {
-                Spacer(modifier = Modifier.height(40.dp))
-            }
+            item { Spacer(modifier = Modifier.height(40.dp)) }
         }
     }
 }

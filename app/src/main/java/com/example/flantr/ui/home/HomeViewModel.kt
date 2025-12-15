@@ -1,77 +1,86 @@
 package com.example.flantr.ui.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.flantr.data.model.Route
-import com.example.flantr.data.model.Stop
+import com.example.flantr.data.repository.RouteRepository
+import com.example.flantr.data.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-data class HomeUiState (
-    //TODO: add logic to save a route to the profile of a user (should be done with a list maybe?)
-    // and maybe an addList function
+data class HomeUiState(
     val savedRoutes: List<Route> = emptyList(),
-    //TODO: add logic for "popular routes" -> i have no fucking clue how i'm gonna do that bro
-    val popularRoutes: List<Route> = emptyList()
+    val popularRoutes: List<Route> = emptyList(),
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null
 )
+class HomeViewModel(
+    private val routeRepository: RouteRepository = RouteRepository(),
+    private val userRepository: UserRepository = UserRepository()
+) : ViewModel() {
 
-class HomeViewModel: ViewModel(){
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState = _uiState.asStateFlow()
 
-    init{
-        loadMockData()
+    init {
+        loadData()
     }
 
-    //using mock data right now because i don't want to traumatise myself with
-    //a database rn. Also the mockdata is AI generated because THIS is where AI actually
-    //speeds up the process of writing code.
-    private fun loadMockData(){
-        val mockStops = listOf(
-            Stop("1", "The Corner Bookshop", "123 Main St", "Cozy reading nooks", 45),
-            Stop("2", "Brew & Pages", "456 Oak Ave", "Great latte", 30)
-        )
-        val saved = listOf(
-            Route("s1", "Weekend Downtown Walk", "Custom", "My favorite spots", 150, "2.1 miles", mockStops),
-            Route("s2", "Hidden Gems", "Exploration", "Off the beaten path", 180, "3.2 miles", mockStops)
-        )
-        val popular = listOf(
-            Route(
-                id = "1",
-                name = "Coffee & Books Morning",
-                theme = "Bookstore & Coffee",
-                description = "A cozy morning visiting independent bookstores",
-                totalTimeMinutes = 180,
-                distance = "2.3 miles",
-                stops = mockStops,
-                imageUrl = "https://images.unsplash.com/photo-1587566657649-2b1a1a5c79e4?w=1080"
-            ),
-            Route(
-                id = "2",
-                name = "Urban Art Trail",
-                theme = "Art & Culture",
-                description = "Explore stunning street art and galleries",
-                totalTimeMinutes = 240,
-                distance = "3.5 miles",
-                stops = mockStops,
-                imageUrl = "https://images.unsplash.com/photo-158030306457-e54f25fe4384?w=1080"
-            ),
-            Route(
-                id = "3",
-                name = "Foodie Crawl",
-                theme = "Food & Drinks",
-                description = "Sample the best local flavors",
-                totalTimeMinutes = 210,
-                distance = "1.8 miles",
-                stops = mockStops,
-                imageUrl = "https://images.unsplash.com/photo-1529686398651-b8112f4bb98c?w=1080"
-            )
-        )
-        _uiState.update { currentState ->
-            currentState.copy(
-                savedRoutes = saved,
-                popularRoutes = popular
-            )
+    fun loadData() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            try {
+                // 1. Fetch All Routes
+                val allRoutes = routeRepository.getAllRoutes()
+
+                // 2. Filter/Sort for "Popular"
+                // Sort by popularityScore descending
+                val popular = allRoutes.sortedByDescending { it.popularityScore }
+
+                // 3. Fetch Saved Routes
+                val user = userRepository.getCurrentUser()
+                val savedRoutesList = mutableListOf<Route>()
+
+                if (user != null && user.savedRouteIds.isNotEmpty()) {
+                    // Efficiently match existing routes if we already fetched them in allRoutes
+                    // Otherwise, fetch specific IDs (omitted for brevity)
+                    savedRoutesList.addAll(
+                        allRoutes.filter { user.savedRouteIds.contains(it.id) }
+                    )
+                }
+
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        popularRoutes = popular,
+                        savedRoutes = savedRoutesList,
+                        isLoading = false
+                    )
+                }
+            } catch (e: Exception) {
+                // Handle error
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+    fun bookmarkRoute(route: Route) {
+        viewModelScope.launch {
+            val isCurrentlySaved = _uiState.value.savedRoutes.any { it.id == route.id }
+
+            // Optimistic Update
+            if (isCurrentlySaved) {
+                _uiState.update { state ->
+                    state.copy(savedRoutes = state.savedRoutes.filter { it.id != route.id })
+                }
+                userRepository.removeBookmark(route.id)
+            } else {
+                _uiState.update { state ->
+                    state.copy(savedRoutes = state.savedRoutes + route)
+                }
+                userRepository.bookmarkRoute(route.id)
+            }
         }
     }
 }
