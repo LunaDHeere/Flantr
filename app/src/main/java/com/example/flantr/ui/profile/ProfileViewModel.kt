@@ -2,9 +2,13 @@ package com.example.flantr.ui.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.flantr.data.model.Collection
+import com.example.flantr.data.model.Route
+import com.example.flantr.data.repository.RouteRepository
 import com.example.flantr.data.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -36,11 +40,17 @@ data class ProfileUiState(
     val notifyNearbyPlaces: Boolean = false,
 
     // Appearance
-    val appTheme: String = "auto"
+    val appTheme: String = "auto",
+
+    //collections
+    val collections: List<Collection> = emptyList(),
+    val createdRoutes: List<Route> = emptyList(),
+    val showCreateCollectionDialog: Boolean = false
 )
 
 class ProfileViewModel(
-    private val repo: UserRepository = UserRepository()
+    private val userRepo: UserRepository = UserRepository(),
+    private val routeRepo: RouteRepository = RouteRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -48,11 +58,13 @@ class ProfileViewModel(
 
     init {
         loadUser()
+        loadCollections()
+        loadCreatedRoutes()
     }
 
     private fun loadUser() {
         viewModelScope.launch {
-            val user = repo.getCurrentUser()
+            val user = userRepo.getCurrentUser()
             user?.let {
                 _uiState.value = ProfileUiState(
                     id = it.id,
@@ -93,26 +105,59 @@ class ProfileViewModel(
             else -> current
         }
         // Save to Firebase
-        viewModelScope.launch { repo.updateUser(current.id, mapOf(field to value)) }
+        viewModelScope.launch { userRepo.updateUser(current.id, mapOf(field to value)) }
     }
 
     fun setWalkingPace(pace: String) {
         val current = _uiState.value
         _uiState.value = current.copy(walkingPace = pace)
-        viewModelScope.launch { repo.updateUser(current.id, mapOf("walkingPace" to pace)) }
+        viewModelScope.launch { userRepo.updateUser(current.id, mapOf("walkingPace" to pace)) }
     }
 
     fun setMaxDistance(dist: Float) {
         val current = _uiState.value
         _uiState.value = current.copy(maxWalkingDistance = dist)
-        // Note: For sliders, usually you debounce the DB update, but direct update is fine for now
-        viewModelScope.launch { repo.updateUser(current.id, mapOf("maxWalkingDistance" to dist)) }
+        viewModelScope.launch { userRepo.updateUser(current.id, mapOf("maxWalkingDistance" to dist)) }
     }
 
     fun setTheme(theme: String) {
         val current = _uiState.value
         _uiState.value = current.copy(appTheme = theme)
-        viewModelScope.launch { repo.updateUser(current.id, mapOf("appTheme" to theme)) }
+        viewModelScope.launch { userRepo.updateUser(current.id, mapOf("appTheme" to theme)) }
+    }
+
+    private fun loadCollections(){
+        viewModelScope.launch {
+            val cols = userRepo.getUserCollections()
+            _uiState.update { it.copy(collections = cols) }
+        }
+    }
+    private fun loadCreatedRoutes(){
+        viewModelScope.launch {
+            val userId = userRepo.getCurrentUser()?.id ?: return@launch
+            val myRoutes = routeRepo.getRoutesByAuthor(userId)
+            _uiState.update { it.copy(createdRoutes = myRoutes) }
+        }
+    }
+
+    fun createCollection(name: String, desc: String, color: String) {
+        viewModelScope.launch {
+            val newCol = Collection(title = name, description = desc, color = color)
+            userRepo.createCollection(newCol)
+            loadCollections()
+            _uiState.update { it.copy(showCreateCollectionDialog = false) }
+        }
+    }
+
+    fun deleteCollection(id: String) {
+        viewModelScope.launch {
+            userRepo.deleteCollection(id)
+            loadCollections()
+        }
+    }
+
+    fun toggleCreateDialog(show: Boolean) {
+        _uiState.update { it.copy(showCreateCollectionDialog = show) }
     }
 
     private fun formatDate(timestamp: Long): String {

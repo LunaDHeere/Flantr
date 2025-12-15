@@ -22,5 +22,4 @@ data class Stop(
     val geoPoint: GeoPoint? = null // Preparing for maps later (create a dummy class or use Firebase's)
 )
 
-// Simple helper for now if you don't want to import Firebase here yet
 data class GeoPoint(val lat: Double = 0.0, val lng: Double = 0.0)

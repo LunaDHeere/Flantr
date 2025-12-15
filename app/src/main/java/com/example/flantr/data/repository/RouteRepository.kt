@@ -11,13 +11,10 @@ class RouteRepository {
 
     // 1. Create (Upload) a new Route
     suspend fun createRoute(route: Route): String {
-        // Generate a random ID for the document first
         val newDocRef = routesCollection.document()
 
-        // Copy the route but set the correct ID
         val routeWithId = route.copy(id = newDocRef.id)
 
-        // Save it to Firestore
         newDocRef.set(routeWithId).await()
         return newDocRef.id
     }
@@ -35,5 +32,15 @@ class RouteRepository {
     suspend fun getRouteById(routeId: String): Route? {
         val snapshot = routesCollection.document(routeId).get().await()
         return snapshot.toObject(Route::class.java)
+    }
+
+    //4. Get Routes by Author (For Profile Screen)
+    suspend fun getRoutesByAuthor(authorId: String): List<Route> {
+        return routesCollection
+            .whereEqualTo("authorId", authorId)
+            .orderBy("name", Query.Direction.ASCENDING)
+            .get()
+            .await()
+            .toObjects(Route::class.java)
     }
 }
