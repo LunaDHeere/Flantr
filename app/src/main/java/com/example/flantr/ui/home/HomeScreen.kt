@@ -25,7 +25,7 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             HomeHeader(
-                onCreateRoute = { /* TODO */ }
+                onCreateRoute = { navController.navigate("createRoute") }
             )
         }
     ) { padding ->

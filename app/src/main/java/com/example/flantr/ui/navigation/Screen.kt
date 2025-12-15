@@ -5,4 +5,6 @@ sealed class Screen(val route: String){
     data object Home : Screen("home")
     data object Profile: Screen("profile")
     data object ActiveRoute: Screen("activeRoute")
+    data object FavouriteRoutes: Screen("favouriteRoutes")
+    data object CreateRoute: Screen("createRoute")
 }

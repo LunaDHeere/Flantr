@@ -2,7 +2,6 @@ package com.example.flantr.ui.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.flantr.data.model.User
 import com.example.flantr.data.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,14 +14,34 @@ data class ProfileUiState(
     val id: String = "",
     val name: String = "",
     val email: String = "",
-    val memberSince: String = "", // UI wants a String
+    val memberSince: String = "",
+    val tripCount: Int = 0,
+    val placesVisited: Int = 0,
+
+    // Transportation
+    val includePublicTransport: Boolean = true,
+    val walkingPace: String = "moderate",
+    val maxWalkingDistance: Float = 5f,
+
+    // Accessibility
     val accessibilityMode: Boolean = false,
     val avoidStairs: Boolean = false,
-    val tripCount: Int = 0,
-    val placesVisited: Int = 0
+
+    // Route
+    val preferScenic: Boolean = true,
+
+    // Notifications
+    val notifyRouteReminders: Boolean = true,
+    val notifyNewRoutes: Boolean = true,
+    val notifyNearbyPlaces: Boolean = false,
+
+    // Appearance
+    val appTheme: String = "auto"
 )
 
-class ProfileViewModel(private val repo: UserRepository = UserRepository()) : ViewModel() {
+class ProfileViewModel(
+    private val repo: UserRepository = UserRepository()
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState
@@ -34,50 +53,71 @@ class ProfileViewModel(private val repo: UserRepository = UserRepository()) : Vi
     private fun loadUser() {
         viewModelScope.launch {
             val user = repo.getCurrentUser()
-            if (user != null) {
-                _uiState.value = user.toUiState()
+            user?.let {
+                _uiState.value = ProfileUiState(
+                    id = it.id,
+                    name = it.name.ifEmpty { "Unknown" },
+                    email = it.email,
+                    memberSince = formatDate(it.memberSince),
+                    tripCount = it.tripCount,
+                    placesVisited = it.placesVisited,
+
+                    // Map new fields
+                    includePublicTransport = it.includePublicTransport,
+                    walkingPace = it.walkingPace,
+                    maxWalkingDistance = it.maxWalkingDistance,
+                    accessibilityMode = it.accessibilityMode,
+                    avoidStairs = it.avoidStairs,
+                    preferScenic = it.preferScenic,
+                    notifyRouteReminders = it.notifyRouteReminders,
+                    notifyNewRoutes = it.notifyNewRoutes,
+                    notifyNearbyPlaces = it.notifyNearbyPlaces,
+                    appTheme = it.appTheme
+                )
             }
         }
     }
 
-    fun toggleAccessibilityMode() {
-        // Toggle based on CURRENT state, not the last emitted value
+    // Generic function to update any boolean field
+    fun updateBoolean(field: String, value: Boolean) {
         val current = _uiState.value
-        val newValue = !current.accessibilityMode
-
-        // Optimistic update (update UI immediately)
-        _uiState.value = current.copy(accessibilityMode = newValue)
-
-        viewModelScope.launch {
-            repo.updateUser(current.id, mapOf("accessibilityMode" to newValue))
+        // Update local state immediately for UI responsiveness
+        _uiState.value = when(field) {
+            "includePublicTransport" -> current.copy(includePublicTransport = value)
+            "accessibilityMode" -> current.copy(accessibilityMode = value)
+            "avoidStairs" -> current.copy(avoidStairs = value)
+            "preferScenic" -> current.copy(preferScenic = value)
+            "notifyRouteReminders" -> current.copy(notifyRouteReminders = value)
+            "notifyNewRoutes" -> current.copy(notifyNewRoutes = value)
+            "notifyNearbyPlaces" -> current.copy(notifyNearbyPlaces = value)
+            else -> current
         }
+        // Save to Firebase
+        viewModelScope.launch { repo.updateUser(current.id, mapOf(field to value)) }
     }
 
-    fun toggleAvoidStairs() {
+    fun setWalkingPace(pace: String) {
         val current = _uiState.value
-        val newValue = !current.avoidStairs
-
-        _uiState.value = current.copy(avoidStairs = newValue)
-
-        viewModelScope.launch {
-            repo.updateUser(current.id, mapOf("avoidStairs" to newValue))
-        }
+        _uiState.value = current.copy(walkingPace = pace)
+        viewModelScope.launch { repo.updateUser(current.id, mapOf("walkingPace" to pace)) }
     }
-}
 
-// FIX: Convert the Long timestamp to a formatted String
-private fun User.toUiState(): ProfileUiState {
-    val dateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
-    val dateString = dateFormatter.format(Date(memberSince))
+    fun setMaxDistance(dist: Float) {
+        val current = _uiState.value
+        _uiState.value = current.copy(maxWalkingDistance = dist)
+        // Note: For sliders, usually you debounce the DB update, but direct update is fine for now
+        viewModelScope.launch { repo.updateUser(current.id, mapOf("maxWalkingDistance" to dist)) }
+    }
 
-    return ProfileUiState(
-        id = id,
-        name = name,
-        email = email,
-        memberSince = dateString, // Pass the converted string here
-        accessibilityMode = accessibilityMode,
-        avoidStairs = avoidStairs,
-        tripCount = tripCount,
-        placesVisited = placesVisited
-    )
+    fun setTheme(theme: String) {
+        val current = _uiState.value
+        _uiState.value = current.copy(appTheme = theme)
+        viewModelScope.launch { repo.updateUser(current.id, mapOf("appTheme" to theme)) }
+    }
+
+    private fun formatDate(timestamp: Long): String {
+        return try {
+            SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(Date(timestamp))
+        } catch (e: Exception) { "Unknown" }
+    }
 }
