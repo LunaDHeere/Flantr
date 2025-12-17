@@ -21,9 +21,11 @@ import androidx.navigation.compose.rememberNavController
 import com.example.flantr.ui.auth.AuthScreen
 import com.example.flantr.ui.home.HomeScreen
 import com.example.flantr.ui.home.HomeViewModel
+import com.example.flantr.ui.map.MapScreen
 import com.example.flantr.ui.navigation.FlantrBottomBar
 import com.example.flantr.ui.profile.ProfileScreen
 import com.example.flantr.ui.routes.active.ActiveRouteScreen
+import com.example.flantr.ui.routes.active.ActiveRouteViewModel // Added Import
 import com.example.flantr.ui.routes.create.CreateRouteScreen
 import com.example.flantr.ui.routes.favourites.FavouritesScreen
 import com.example.flantr.ui.theme.FlantrTheme
@@ -45,9 +47,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
 @Composable
 fun FlantrApp() {
     val navController = rememberNavController()
+
+    // 1. Hoist the ViewModel here so it survives navigation changes
+    // This instance will be shared between ActiveRouteScreen and MapScreen
+    val activeRouteViewModel: ActiveRouteViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
@@ -78,6 +85,7 @@ fun FlantrApp() {
             composable("active_route/{routeId}") { backStackEntry ->
                 val routeId = backStackEntry.arguments?.getString("routeId")
 
+                // We need the HomeViewModel just to look up the route data
                 val homeViewModel: HomeViewModel = viewModel()
                 val uiState by homeViewModel.uiState.collectAsState()
 
@@ -88,20 +96,33 @@ fun FlantrApp() {
                     ActiveRouteScreen(
                         navController = navController,
                         route = selectedRoute,
-                        onExit = { navController.popBackStack() }
+                        viewModel = activeRouteViewModel, // PASS THE SHARED INSTANCE
+                        onExit = { navController.popBackStack() },
+                        onOpenMap = { navController.navigate("map") }
                     )
                 } else {
                     Text("Error: Route not found")
                 }
             }
-            composable("favouriteRoutes"){
+
+            composable("favouriteRoutes") {
                 FavouritesScreen(navController = navController)
             }
-            composable("CreateRoute"){
+
+            composable("CreateRoute") {
                 CreateRouteScreen(navController = navController)
             }
-            composable("routesOverview"){
+
+            composable("routesOverview") {
                 RoutesOverviewScreen(navController = navController)
+            }
+
+            composable("map") {
+                MapScreen(
+                    navController = navController,
+                    viewModel = activeRouteViewModel,
+                    onBack = { navController.popBackStack() }
+                )
             }
         }
     }

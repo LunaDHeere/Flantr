@@ -68,4 +68,8 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.kotlinx.coroutines.play.services)
 
+    implementation(libs.osmdroid.android)
+    implementation(libs.play.services.location)
+    implementation(libs.osmbonuspack)
+
 }

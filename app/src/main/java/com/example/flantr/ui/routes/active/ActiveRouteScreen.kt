@@ -2,8 +2,6 @@ package com.example.flantr.ui.routes.active
 
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.foundation.background
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,24 +22,42 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.flantr.data.model.Route
 import com.example.flantr.data.model.Stop
 import com.example.flantr.ui.theme.PurplePrimary
 import com.example.flantr.ui.theme.PrimaryGradient
 import com.example.flantr.ui.theme.BackgroundGradient
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
+import com.google.android.gms.location.LocationServices
 
 @Composable
 fun ActiveRouteScreen(
     navController: NavController,
-    viewModel: ActiveRouteViewModel = viewModel(),
+    viewModel: ActiveRouteViewModel,
     route: Route,
-    onExit: () -> Unit
+    onExit: () -> Unit,
+    onOpenMap: () -> Unit
+    //TODO: add a button to "get directions" for the route
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val currentStop = route.stops[uiState.currentStopIndex]
     val context = LocalContext.current
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+
+    val userPace = "moderate"
+    val userTransport = true
+
+    val handleGetDirections = {
+        // 1. Update Global State
+        viewModel.startNavigation(route, context)
+        // 2. Navigate to Map
+        onOpenMap()
+    }
 
     // Calculations
     val progress by animateFloatAsState(
@@ -53,6 +69,21 @@ fun ActiveRouteScreen(
     val remainingTime = route.stops
         .drop(uiState.currentStopIndex)
         .sumOf { it.estimatedTimeMinutes }
+
+    val requestPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true) {
+            // Double-check permission to satisfy the compiler
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
+                    if (loc != null && route.stops.isNotEmpty()) {
+                        viewModel.calculateStartEta(loc.latitude, loc.longitude, route.stops[0], userPace, userTransport)
+                    }
+                }
+            }
+        }
+    }
 
     Scaffold(
         containerColor = Color.Transparent, // Let gradient show
@@ -105,14 +136,8 @@ fun ActiveRouteScreen(
                     index = uiState.currentStopIndex,
                     isCompleted = uiState.completedStops.contains(currentStop.id),
                     userNote = uiState.userNotes[currentStop.id],
+                    onGetDirections = handleGetDirections,
                     isEditingNote = uiState.editingNoteId == currentStop.id,
-                    onGetDirections = {
-                        // Launch Google Maps Intent
-                        val uri = Uri.parse("geo:0,0?q=${Uri.encode(currentStop.address)}")
-                        val intent = Intent(Intent.ACTION_VIEW, uri)
-                        intent.setPackage("com.google.android.apps.maps")
-                        try { context.startActivity(intent) } catch (e: Exception) { /* Maps not installed */ }
-                    },
                     onEditNote = { viewModel.setEditingNote(if (it) currentStop.id else null) },
                     onUpdateNote = { viewModel.updateUserNote(currentStop.id, it) }
                 )
@@ -136,7 +161,7 @@ fun ActiveRouteScreen(
                     // Complete (Only show if not done)
                     if (!uiState.completedStops.contains(currentStop.id)) {
                         Button(
-                            onClick = { viewModel.completeStop(route) },
+                            onClick = { viewModel.completeStop() },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF22C55E)), // Green
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.weight(1f).height(56.dp)
@@ -150,7 +175,7 @@ fun ActiveRouteScreen(
                     // Next
                     val isLast = uiState.currentStopIndex == route.stops.lastIndex
                     Button(
-                        onClick = { viewModel.nextStop(route) },
+                        onClick = { viewModel.nextStop() },
                         enabled = !isLast,
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                         contentPadding = PaddingValues(0.dp),
@@ -212,7 +237,7 @@ fun CurrentStopCard(
     isEditingNote: Boolean,
     onGetDirections: () -> Unit,
     onEditNote: (Boolean) -> Unit,
-    onUpdateNote: (String) -> Unit
+    onUpdateNote: (String) -> Unit,
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -334,6 +359,24 @@ fun CurrentStopCard(
                         }
                     }
                 }
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(24.dp)){
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.AccessTime, contentDescription = null, tint = PurplePrimary)
+                Spacer(Modifier.width(8.dp))
+                Text("${stop.estimatedTimeMinutes} mins")
+            }
+
+            // UPDATED "Get Directions" Button
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clickable { onGetDirections() } // This triggers the callback
+            ) {
+                Icon(Icons.Default.Map, contentDescription = null, tint = PurplePrimary)
+                Spacer(Modifier.width(8.dp))
+                Text("Get Directions", color = PurplePrimary, fontWeight = FontWeight.Bold)
             }
         }
     }
