@@ -109,11 +109,28 @@ fun HomeHeroSection() {
 /* ---------- SECTION HEADER ---------- */
 
 @Composable
-fun HomeSectionHeader(title: String, icon: ImageVector) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, contentDescription = null, tint = Color(0xFF9333EA))
-        Spacer(Modifier.width(8.dp))
-        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+fun HomeSectionHeader(
+    title: String,
+    icon: ImageVector,
+    onSeeAllClick: (() -> Unit)? = null
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Left side: Icon + Title
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, tint = Color(0xFF9333EA))
+            Spacer(Modifier.width(8.dp))
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        }
+
+        if (onSeeAllClick != null) {
+            TextButton(onClick = onSeeAllClick) {
+                Text("See All", color = Color(0xFF9333EA))
+            }
+        }
     }
 }
 

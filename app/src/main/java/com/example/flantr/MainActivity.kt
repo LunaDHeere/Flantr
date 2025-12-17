@@ -27,7 +27,7 @@ import com.example.flantr.ui.routes.active.ActiveRouteScreen
 import com.example.flantr.ui.routes.create.CreateRouteScreen
 import com.example.flantr.ui.routes.favourites.FavouritesScreen
 import com.example.flantr.ui.theme.FlantrTheme
-import com.example.flantr.ui.trips.TripsScreen
+import com.example.flantr.ui.trips.RoutesOverviewScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,8 +100,8 @@ fun FlantrApp() {
             composable("CreateRoute"){
                 CreateRouteScreen(navController = navController)
             }
-            composable("trips"){
-                TripsScreen(navController = navController)
+            composable("routesOverview"){
+                RoutesOverviewScreen(navController = navController)
             }
         }
     }

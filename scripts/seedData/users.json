@@ -1,0 +1,60 @@
+[
+  {
+    "id": "user-alex",
+    "name": "Alex Morgan",
+    "email": "alex@flantr.dev",
+    "walkingPace": "fast",
+    "includePublicTransport": true,
+    "preferScenic": true,
+    "savedRouteIds": []
+  },
+  {
+    "id": "user-jamie",
+    "name": "Jamie Lee",
+    "email": "jamie@flantr.dev",
+    "walkingPace": "moderate",
+    "includePublicTransport": false,
+    "savedRouteIds": []
+  },
+  {
+    "id": "user-sam",
+    "name": "Sam Rivera",
+    "email": "sam@flantr.dev",
+    "walkingPace": "slow",
+    "accessibilityMode": true,
+    "avoidStairs": true,
+    "savedRouteIds": []
+  },
+  {
+    "id": "user-taylor",
+    "name": "Taylor Chen",
+    "email": "taylor@flantr.dev"
+  },
+  {
+    "id": "user-jordan",
+    "name": "Jordan Kim",
+    "email": "jordan@flantr.dev"
+  },
+  {
+    "id": "user-riley",
+    "name": "Riley Patel",
+    "email": "riley@flantr.dev"
+  },
+  {
+    "id": "user-morgan",
+    "name": "Morgan Silva",
+    "email": "morgan@flantr.dev"
+  },
+  {
+    "id": "user-casey",
+    "name": "Casey Nguyen",
+    "email": "casey@flantr.dev"
+  },
+  {
+    "id": "user-dev",
+    "name": "Flantr Dev",
+    "email": "dev@flantr.app",
+    "walkingPace": "moderate",
+    "savedRouteIds": []
+  }
+]

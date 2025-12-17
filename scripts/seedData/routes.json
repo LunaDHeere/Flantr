@@ -1,0 +1,75 @@
+[
+  {
+    "name": "Downtown Coffee Crawl",
+    "theme": "Coffee",
+    "description": "Independent cafés within walking distance.",
+    "totalTimeMinutes": 140,
+    "distance": "3.5 km",
+    "authorId": "user-alex",
+    "iconId": "coffee",
+    "stops": [
+      {
+        "id": "stop-1",
+        "name": "Blue Bottle",
+        "address": "300 Webster St, Oakland, CA",
+        "estimatedTimeMinutes": 30,
+        "geoPoint": { "lat": 37.8044, "lng": -122.2711 }
+      },
+      {
+        "id": "stop-2",
+        "name": "Sightglass Coffee",
+        "address": "270 7th St, San Francisco, CA",
+        "estimatedTimeMinutes": 25,
+        "geoPoint": { "lat": 37.7764, "lng": -122.4080 }
+      }
+    ]
+  },
+  {
+    "name": "Historic Landmarks Walk",
+    "theme": "History",
+    "description": "Must-see historic spots.",
+    "totalTimeMinutes": 180,
+    "distance": "4.2 km",
+    "authorId": "user-jamie",
+    "iconId": "museum",
+    "stops": [
+      {
+        "id": "stop-3",
+        "name": "Old City Hall",
+        "address": "1 Dr Carlton B Goodlett Pl, SF",
+        "estimatedTimeMinutes": 40,
+        "geoPoint": { "lat": 37.7793, "lng": -122.4192 }
+      }
+    ]
+  },
+  {
+    "name": "Street Art Loop",
+    "theme": "Art",
+    "description": "Murals and public art.",
+    "totalTimeMinutes": 120,
+    "distance": "2.8 km",
+    "authorId": "user-taylor",
+    "iconId": "palette",
+    "stops": []
+  },
+  {
+    "name": "Golden Gate Scenic Route",
+    "theme": "Nature",
+    "description": "Views, wind, and beauty.",
+    "totalTimeMinutes": 210,
+    "distance": "5.5 km",
+    "authorId": "user-dev",
+    "iconId": "park",
+    "stops": []
+  },
+  {
+    "name": "Night Food Run",
+    "theme": "Food",
+    "description": "Late night eats.",
+    "totalTimeMinutes": 160,
+    "distance": "3.9 km",
+    "authorId": "user-riley",
+    "iconId": "restaurant",
+    "stops": []
+  }
+]

@@ -28,7 +28,7 @@ private val ActiveItemGradient = Brush.linearGradient(
 
 sealed class BottomNavItem(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
     object Home : BottomNavItem("home", "Home", Icons.Default.Home)
-    object Trips : BottomNavItem("trips", "Trips", Icons.Default.Explore)
+    object Trips : BottomNavItem("routesOverview", "Trips", Icons.Default.Explore) // Changed label from "routesOverview" to "Trips"
     object Map : BottomNavItem("map", "Map", Icons.Default.Map)
     object Favourites : BottomNavItem("favouriteRoutes", "Favourites", Icons.Default.Favorite)
     object Account : BottomNavItem("profile", "Account", Icons.Default.Person)
@@ -73,8 +73,10 @@ fun FlantrBottomBar(navController: NavController) {
                             .clickable {
                                 if (!isSelected) {
                                     navController.navigate(item.route) {
-                                        navController.graph.startDestinationRoute?.let { start ->
-                                            popUpTo(start) { saveState = true }
+                                        // FIX: Pop up to the HOME route, not the graph start (which might be Auth)
+                                        // This ensures we don't build a huge stack of screens
+                                        popUpTo(BottomNavItem.Home.route) {
+                                            saveState = true
                                         }
                                         launchSingleTop = true
                                         restoreState = true

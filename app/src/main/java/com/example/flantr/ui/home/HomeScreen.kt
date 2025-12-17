@@ -22,6 +22,10 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // Configuration Limits
+    val savedRoutesLimit = 2
+    val popularRoutesLimit = 4
+
     // Helper set for O(1) lookups to check if a route is saved
     val savedRouteIds = remember(uiState.savedRoutes) {
         uiState.savedRoutes.map { it.id }.toSet()
@@ -47,10 +51,18 @@ fun HomeScreen(
             // Saved Routes Section
             if (uiState.savedRoutes.isNotEmpty()) {
                 item {
-                    HomeSectionHeader(title = "My Saved Routes", icon = Icons.Default.Bookmark)
+                    HomeSectionHeader(
+                        title = "My Saved Routes",
+                        icon = Icons.Default.Bookmark,
+                        // Only show "See All" if we have more routes than the limit
+                        onSeeAllClick = if (uiState.savedRoutes.size > savedRoutesLimit) {
+                            { navController.navigate("favouriteRoutes") }
+                        } else null
+                    )
                 }
 
-                items(uiState.savedRoutes) { route ->
+                // Only display the first 'savedRoutesLimit' items
+                items(uiState.savedRoutes.take(savedRoutesLimit)) { route ->
                     HomeSavedRouteItem(
                         route = route,
                         onRemove = { viewModel.bookmarkRoute(route) },
@@ -61,10 +73,17 @@ fun HomeScreen(
 
             // Popular Routes Section
             item {
-                HomeSectionHeader(title = "Popular Routes", icon = Icons.Default.TrendingUp)
+                HomeSectionHeader(
+                    title = "Popular Routes",
+                    icon = Icons.Default.TrendingUp,
+                    onSeeAllClick = if (uiState.popularRoutes.size > popularRoutesLimit) {
+                        { navController.navigate("routesOverview") }
+                    } else null
+                )
             }
 
-            items(uiState.popularRoutes) { route ->
+            // Only display the first 'popularRoutesLimit' items
+            items(uiState.popularRoutes.take(popularRoutesLimit)) { route ->
                 HomePopularRouteCard(
                     route = route,
                     isSaved = savedRouteIds.contains(route.id),

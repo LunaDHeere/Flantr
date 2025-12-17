@@ -7,4 +7,5 @@ sealed class Screen(val route: String){
     data object ActiveRoute: Screen("activeRoute")
     data object FavouriteRoutes: Screen("favouriteRoutes")
     data object CreateRoute: Screen("createRoute")
+    data object RoutesOverview: Screen("routesOverview")
 }
