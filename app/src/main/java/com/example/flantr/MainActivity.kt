@@ -3,15 +3,19 @@ package com.example.flantr
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -83,25 +87,31 @@ fun FlantrApp() {
             }
 
             composable("active_route/{routeId}") { backStackEntry ->
-                val routeId = backStackEntry.arguments?.getString("routeId")
+                val routeId = backStackEntry.arguments?.getString("routeId") ?: ""
 
+                LaunchedEffect(routeId) {
+                    activeRouteViewModel.loadRoute(routeId)
+                }
                 // We need the HomeViewModel just to look up the route data
                 val homeViewModel: HomeViewModel = viewModel()
                 val uiState by homeViewModel.uiState.collectAsState()
+                val activeUiState by activeRouteViewModel.uiState.collectAsState()
 
                 val allRoutes = uiState.popularRoutes + uiState.savedRoutes
                 val selectedRoute = allRoutes.find { it.id == routeId }
 
-                if (selectedRoute != null) {
+                if (activeUiState.activeRoute != null) {
                     ActiveRouteScreen(
                         navController = navController,
-                        route = selectedRoute,
+                        route = activeUiState.activeRoute!!,
                         viewModel = activeRouteViewModel, // PASS THE SHARED INSTANCE
                         onExit = { navController.popBackStack() },
                         onOpenMap = { navController.navigate("map") }
                     )
                 } else {
-                    Text("Error: Route not found")
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
                 }
             }
 

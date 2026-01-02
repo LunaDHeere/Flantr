@@ -114,8 +114,6 @@ fun TripCollectionCard(
 fun TripRouteCard(
     route: Route,
     onStart: () -> Unit,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -129,14 +127,6 @@ fun TripRouteCard(
                 Column(Modifier.weight(1f)) {
                     Text(route.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text(route.description, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                }
-                Row {
-                    IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Outlined.Edit, contentDescription = "Edit", tint = Color.Gray, modifier = Modifier.size(18.dp))
-                    }
-                    IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Outlined.Delete, contentDescription = "Delete", tint = Color.Red.copy(alpha = 0.7f), modifier = Modifier.size(18.dp))
-                    }
                 }
             }
 

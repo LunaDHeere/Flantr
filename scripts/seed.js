@@ -22,10 +22,24 @@ async function seedUsers() {
 
 async function seedRoutes() {
   for (const route of routes) {
+    const validStops = route.stops && route.stops.length > 0 ? route.stops : [{
+      id: "default-stop",
+      name: "Starting Point",
+      address: "City Center",
+      description: "Auto-generated starting point",
+      estimatedTimeMinutes: 15,
+      geoPoint: { lat: 51.2194, lng: 4.4025 }
+    }];
+
     const ref = db.collection("routes").doc();
-    await ref.set({ ...route, id: ref.id });
+    await ref.set({
+      ...route,
+      id: ref.id,
+      stops: validStops,
+      totalTimeMinutes: validStops.reduce((acc, s) => acc + s.estimatedTimeMinutes, 0)
+    });
   }
-  console.log("✅ Routes seeded");
+  console.log("✅ Routes seeded with min 1 stop");
 }
 
 async function run() {

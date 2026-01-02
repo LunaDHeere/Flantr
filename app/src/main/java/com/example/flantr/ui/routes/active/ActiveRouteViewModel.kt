@@ -1,9 +1,11 @@
 package com.example.flantr.ui.routes.active
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import android.content.Context
 import androidx.lifecycle.viewModelScope
 import com.example.flantr.data.model.Route
 import com.example.flantr.data.model.Stop
+import com.example.flantr.data.repository.UserRepository
 import com.example.flantr.utils.LocationUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,150 +15,215 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.osmdroid.bonuspack.routing.OSRMRoadManager
 import org.osmdroid.util.GeoPoint as OsmGeoPoint
+import com.google.firebase.auth.FirebaseAuth
+import androidx.lifecycle.AndroidViewModel
+import com.example.flantr.data.repository.RouteRepository
 
 data class ActiveRouteUiState(
-    val activeRoute: Route? = null, // The currently active route object
-    val isMapNavigationActive: Boolean = false, // Is the route currently visible on the MapScreen?
+    val calculatedDurations: Map<Int, Int> = emptyMap(),
+    val activeRoute: Route? = null,
+    val isMapNavigationActive: Boolean = false,
     val currentStopIndex: Int = 0,
     val completedStops: Set<String> = emptySet(),
     val userNotes: Map<String, String> = emptyMap(),
     val editingNoteId: String? = null,
     val timeToFirstStop: Int? = null,
     val routePoints: List<OsmGeoPoint> = emptyList(),
+    val currentUserId: String = ""
 )
 
-class ActiveRouteViewModel : ViewModel() {
+class ActiveRouteViewModel(application: Application ) : AndroidViewModel(application) {
+
+    private val auth = FirebaseAuth.getInstance()
+    private val userRepo = UserRepository()
+    private val routeRepo = RouteRepository()
     private val _uiState = MutableStateFlow(ActiveRouteUiState())
     val uiState = _uiState.asStateFlow()
 
-    // --- Navigation & State Management ---
+    init {
+        val firebaseUser = auth.currentUser
+        _uiState.update { it.copy(currentUserId = firebaseUser?.uid ?: "") }
 
-    // Called when user clicks "Get Directions"
-    fun startNavigation(route: Route, context: android.content.Context) {
+        observeUserSettings()
+    }
+    /* -------------------- User Settings logic -------------------- */
+
+    private fun observeUserSettings() {
+        viewModelScope.launch {
+            userRepo.getUserFlow().collect { user ->
+                val currentRoute = _uiState.value.activeRoute
+                if (user != null && currentRoute != null) {
+                    loadRealRoute(currentRoute.stops, getApplication())
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            _uiState.collect { state ->
+                val route = state.activeRoute
+                if (route != null && state.calculatedDurations.isEmpty()) {
+                    loadRealRoute(route.stops, getApplication())
+                }
+            }
+        }
+    }
+
+    /* -------------------- Navigation -------------------- */
+
+    fun startNavigation(route: Route) {
         _uiState.update {
             it.copy(
                 activeRoute = route,
-                isMapNavigationActive = true // Show on map
+                isMapNavigationActive = true
             )
         }
-        // Load the trail points immediately
-        loadRealRoute(route.stops, context)
     }
 
-    // Called when user clicks "Stop Route" on MapScreen
     fun stopNavigationOnMap() {
-        _uiState.update {
-            it.copy(isMapNavigationActive = false) // Hide from map, but keep progress
-        }
+        _uiState.update { it.copy(isMapNavigationActive = false) }
     }
 
-    // Resume simply ensures the flag is true (if the route exists)
-    fun resumeNavigation() {
-        if (_uiState.value.activeRoute != null) {
-            _uiState.update { it.copy(isMapNavigationActive = true) }
-        }
-    }
-
-    // --- Existing Logic (Updated to use activeRoute from state if needed) ---
+    /* -------------------- Stops -------------------- */
 
     fun completeStop() {
-        val route = _uiState.value.activeRoute ?: return
-        val currentIndex = _uiState.value.currentStopIndex
-        val currentStop = route.stops[currentIndex]
-
         _uiState.update { state ->
-            state.copy(completedStops = state.completedStops + currentStop.id)
-        }
+            val stops = state.activeRoute?.stops ?: return@update state
+            val index = state.currentStopIndex
 
-        if (currentIndex < route.stops.lastIndex) {
-            nextStop()
+            if (index !in stops.indices) return@update state
+
+            val stopId = stops[index].id
+            val newCompleted = state.completedStops + stopId
+
+            // Advance index atomically if not at the end
+            val nextIndex = if (index < stops.lastIndex) index + 1 else index
+
+            state.copy(
+                completedStops = newCompleted,
+                currentStopIndex = nextIndex
+            )
         }
     }
 
     fun nextStop() {
-        val route = _uiState.value.activeRoute ?: return
-        if (_uiState.value.currentStopIndex < route.stops.lastIndex) {
-            _uiState.update { it.copy(currentStopIndex = it.currentStopIndex + 1) }
+        _uiState.update { state ->
+            val stops = state.activeRoute?.stops ?: return@update state
+            if (state.currentStopIndex < stops.lastIndex) {
+                state.copy(currentStopIndex = state.currentStopIndex + 1)
+            } else {
+                state
+            }
         }
     }
 
     fun previousStop() {
-        if (_uiState.value.currentStopIndex > 0) {
-            _uiState.update { it.copy(currentStopIndex = it.currentStopIndex - 1) }
+        _uiState.update { state ->
+            if (state.currentStopIndex > 0) {
+                state.copy(currentStopIndex = state.currentStopIndex - 1)
+            } else {
+                state
+            }
         }
     }
 
     fun jumpToStop(index: Int) {
-        _uiState.update { it.copy(currentStopIndex = index) }
+        _uiState.update { state ->
+            val stops = state.activeRoute?.stops ?: return@update state
+            if (index in stops.indices) {
+                state.copy(currentStopIndex = index)
+            } else {
+                state
+            }
+        }
     }
 
-    // Notes Logic
+    /* -------------------- Notes -------------------- */
+
     fun setEditingNote(stopId: String?) {
         _uiState.update { it.copy(editingNoteId = stopId) }
     }
 
     fun updateUserNote(stopId: String, note: String) {
-        _uiState.update { state ->
-            val newNotes = state.userNotes.toMutableMap()
-            newNotes[stopId] = note
-            state.copy(userNotes = newNotes)
+        _uiState.update {
+            it.copy(userNotes = it.userNotes + (stopId to note))
         }
     }
 
-    fun calculateStartEta(userLat: Double, userLng: Double, firstStop: Stop, userPace: String, useTransport: Boolean) {
-        if (firstStop.geoPoint != null) {
-            val dist = LocationUtils.getDistanceMeters(userLat, userLng, firstStop.geoPoint)
-            val minutes = LocationUtils.calculateEtaMinutes(dist, userPace, useTransport)
-            _uiState.update { it.copy(timeToFirstStop = minutes) }
-        }
+    /* -------------------- ETA -------------------- */
+
+    fun calculateStartEta(
+        userLat: Double,
+        userLng: Double,
+        firstStop: Stop,
+        userPace: String,
+        useTransport: Boolean
+    ) {
+        val geoPoint = firstStop.geoPoint ?: return
+        val distance = LocationUtils.getDistanceMeters(userLat, userLng, geoPoint)
+        val minutes = LocationUtils.calculateEtaMinutes(distance, userPace, useTransport)
+
+        _uiState.update { it.copy(timeToFirstStop = minutes) }
     }
 
-    // Private helper to load route, exposed via startNavigation
-    private fun loadRealRoute(stops: List<Stop>, context: android.content.Context) {
+    /* -------------------- OSRM Route -------------------- */
+
+    private fun loadRealRoute(stops: List<Stop>, context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
-            if (stops.size < 2) return@launch
+            val user = userRepo.getCurrentUser() ?: return@launch
+            val useTransport = user.includePublicTransport
 
-            val roadManager = OSRMRoadManager(context, "FlantrApp/1.0")
-            roadManager.setMean(OSRMRoadManager.MEAN_BY_FOOT)
-
-            val waypoints = ArrayList<OsmGeoPoint>()
-            stops.forEach { stop ->
-                stop.geoPoint?.let { waypoints.add(OsmGeoPoint(it.lat, it.lng)) }
+            val roadManager = OSRMRoadManager(context, "FlantrApp/1.0").apply {
+                setMean(OSRMRoadManager.MEAN_BY_FOOT)
             }
 
-            if (waypoints.isNotEmpty()) {
-                val road = roadManager.getRoad(waypoints)
-                val detailedPoints = road.mRouteHigh.map { OsmGeoPoint(it.latitude, it.longitude) }
+            val waypoints = stops.mapNotNull {
+                it.geoPoint?.let { gp -> OsmGeoPoint(gp.lat, gp.lng) }
+            }
 
-                withContext(Dispatchers.Main) {
-                    _uiState.update { it.copy(routePoints = detailedPoints) }
+            if (waypoints.isEmpty()) return@launch
+
+            val road = roadManager.getRoad(ArrayList(waypoints))
+
+            val routePoints = road.mRouteHigh.map {
+                OsmGeoPoint(it.latitude, it.longitude)
+            }
+
+            val durations = road.mLegs.mapIndexed { index, leg ->
+                val rawMinutes = (leg.mDuration / 60).toInt()
+                val adjustedMinutes = if (useTransport) (rawMinutes / 2.5).toInt() else rawMinutes
+
+                (index + 1) to maxOf(1, adjustedMinutes)
+            }.toMap()
+
+            withContext(Dispatchers.Main) {
+                _uiState.update {
+                    it.copy(
+                        routePoints = routePoints,
+                        calculatedDurations = durations
+                    )
                 }
             }
         }
     }
-    fun completeStop(route: Route) {
-        // We use the passed route, so this works even if navigation hasn't started
-        val currentIndex = _uiState.value.currentStopIndex
 
-        // Safety check
-        if (currentIndex >= route.stops.size) return
+    /* -------------------- Delete -------------------- */
 
-        val currentStop = route.stops[currentIndex]
-
-        _uiState.update { state ->
-            state.copy(completedStops = state.completedStops + currentStop.id)
-        }
-
-        // Move to next stop if available
-        if (currentIndex < route.stops.lastIndex) {
-            nextStop(route)
+    fun deleteRoute(routeId: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                routeRepo.deleteRoute(routeId)
+                onSuccess()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
-
-    // 2. Restore the 'route' parameter here
-    fun nextStop(route: Route) {
-        if (_uiState.value.currentStopIndex < route.stops.lastIndex) {
-            _uiState.update { it.copy(currentStopIndex = it.currentStopIndex + 1) }
+    fun loadRoute(routeId: String) {
+        viewModelScope.launch {
+            val route = routeRepo.getRouteById(routeId)
+            if (route != null) {
+                _uiState.update { it.copy(activeRoute = route) }
+            }
         }
     }
 }

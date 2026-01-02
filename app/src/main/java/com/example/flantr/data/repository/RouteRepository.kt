@@ -19,7 +19,6 @@ class RouteRepository {
         return newDocRef.id
     }
 
-    // 2. Get All Routes (For Home Screen)
     suspend fun getAllRoutes(): List<Route> {
         val snapshot = routesCollection
             .orderBy("name", Query.Direction.ASCENDING)
@@ -28,13 +27,11 @@ class RouteRepository {
         return snapshot.toObjects(Route::class.java)
     }
 
-    // 3. Get Specific Route (For Active Route Screen)
     suspend fun getRouteById(routeId: String): Route? {
         val snapshot = routesCollection.document(routeId).get().await()
         return snapshot.toObject(Route::class.java)
     }
 
-    //4. Get Routes by Author (For Profile Screen)
     suspend fun getRoutesByAuthor(authorId: String): List<Route> {
         return routesCollection
             .whereEqualTo("authorId", authorId)
@@ -42,5 +39,9 @@ class RouteRepository {
             .get()
             .await()
             .toObjects(Route::class.java)
+    }
+
+    suspend fun deleteRoute(routeId: String) {
+        routesCollection.document(routeId).delete().await()
     }
 }

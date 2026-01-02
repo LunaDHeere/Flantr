@@ -1,8 +1,10 @@
 package com.example.flantr.ui.routes.create
 
+import android.app.Application
 import android.content.Context
 import android.location.Geocoder
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.flantr.data.model.GeoPoint
 import com.example.flantr.data.model.Route
@@ -17,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
 import kotlin.math.*
+import com.google.firebase.auth.FirebaseAuth
 
 data class CreateRouteUiState(
     val routeName: String = "",
@@ -25,23 +28,35 @@ data class CreateRouteUiState(
     val stops: List<Stop> = emptyList(),
     val editingStopId: String? = null,
     val isSaving: Boolean = false,
-    val isCalculating: Boolean = false, // Shows a spinner while calculating
+    val isCalculating: Boolean = false,
     val selectedIconId: String = "place"
 )
 
-class CreateRouteViewModel(
-    private val routeRepo: RouteRepository = RouteRepository(),
-    private val userRepo: UserRepository = UserRepository()
-) : ViewModel() {
+class CreateRouteViewModel(application: Application) : AndroidViewModel(application) {
 
+
+    private val routeRepo: RouteRepository = RouteRepository()
+    private val userRepo: UserRepository = UserRepository()
     private val _uiState = MutableStateFlow(CreateRouteUiState())
+    private val auth = FirebaseAuth.getInstance()
     val uiState: StateFlow<CreateRouteUiState> = _uiState
 
     // --- Basic Updates ---
-    fun updateName(name: String) { _uiState.update { it.copy(routeName = name) } }
-    fun updateTheme(theme: String) { _uiState.update { it.copy(routeTheme = theme) } }
-    fun updateDescription(desc: String) { _uiState.update { it.copy(routeDescription = desc) } }
-    fun updateIcon(iconId: String) { _uiState.update { it.copy(selectedIconId = iconId) } }
+    fun updateName(name: String) {
+        _uiState.update { it.copy(routeName = name) }
+    }
+
+    fun updateTheme(theme: String) {
+        _uiState.update { it.copy(routeTheme = theme) }
+    }
+
+    fun updateDescription(desc: String) {
+        _uiState.update { it.copy(routeDescription = desc) }
+    }
+
+    fun updateIcon(iconId: String) {
+        _uiState.update { it.copy(selectedIconId = iconId) }
+    }
 
     fun addStop() {
         val newStop = Stop(
@@ -73,7 +88,22 @@ class CreateRouteViewModel(
 
     // --- SMART LOGIC STARTS HERE ---
 
-    // Called whenever the user types in the address field
+    fun updateStopText(stopId: String, name: String, address: String, description: String) {
+        _uiState.update { state ->
+            val updatedStops = state.stops.map { stop ->
+                if (stop.id == stopId) stop.copy(name = name, address = address, description = description)
+                else stop
+            }
+            state.copy(stops = updatedStops)
+        }
+    }
+
+    // 2. Call this manually when a user finishes editing or clicks "Done Editing"
+    fun finalizeStopEditing() {
+        val context = getApplication<Application>().applicationContext
+        recalculateRouteTimes(context)
+    }
+
     fun updateStop(stopId: String, context: Context, update: (Stop) -> Stop) {
         _uiState.update { state ->
             val updatedStops = state.stops.map { stop ->
@@ -82,8 +112,6 @@ class CreateRouteViewModel(
             state.copy(stops = updatedStops)
         }
 
-        // Debounce logic could go here, but for now we calculate on every update
-        // Only calculate if the address actually changed
         val changedStop = _uiState.value.stops.find { it.id == stopId }
         if (changedStop?.address?.isNotBlank() == true) {
             recalculateRouteTimes(context)
@@ -99,15 +127,14 @@ class CreateRouteViewModel(
             val usePublicTransport = user?.includePublicTransport ?: false
             val pace = user?.walkingPace ?: "moderate"
 
-            // Define speed in km/minute
             val walkingSpeedKmMin = when (pace) {
-                "slow" -> 0.05 // ~3 km/h
-                "fast" -> 0.11 // ~6.5 km/h
-                else -> 0.08   // ~5 km/h (moderate)
+                "slow" -> 0.05
+                "fast" -> 0.11
+                else -> 0.08
             }
 
-            // Public transport assumption: 3x faster than walking
-            val effectiveSpeed = if (usePublicTransport) walkingSpeedKmMin * 3 else walkingSpeedKmMin
+            val effectiveSpeed =
+                if (usePublicTransport) walkingSpeedKmMin * 3 else walkingSpeedKmMin
 
             val geocoder = Geocoder(context)
             val calculatedStops = _uiState.value.stops.toMutableList()
@@ -128,18 +155,14 @@ class CreateRouteViewModel(
                             currentGeo = GeoPoint(addresses[0].latitude, addresses[0].longitude)
                         }
                     } catch (e: Exception) {
-                        // Geocoding failed (bad address or no internet), keep old geo or null
                     }
                 }
 
-                // Calculate Time
                 var timeToGetHere = 0
                 if (i > 0 && previousGeo != null && currentGeo != null) {
                     val distKm = calculateDistanceKm(previousGeo, currentGeo)
-                    // Time = Distance / Speed
                     timeToGetHere = (distKm / effectiveSpeed).roundToInt()
 
-                    // Add buffer: Assume 15 mins spent AT the previous stop
                     timeToGetHere += 15
                 }
 
@@ -157,7 +180,6 @@ class CreateRouteViewModel(
         }
     }
 
-    // Haversine Formula: Standard way to calculate distance between two points on a sphere (Earth)
     private fun calculateDistanceKm(p1: GeoPoint, p2: GeoPoint): Double {
         val R = 6371.0 // Earth Radius in km
         val dLat = Math.toRadians(p2.lat - p1.lat)
@@ -170,41 +192,41 @@ class CreateRouteViewModel(
     }
 
     // --- Save Logic ---
-    fun saveRoute(onSuccess: () -> Unit) {
-        if (_uiState.value.routeName.isBlank()) return
+    fun saveRoute(onSuccess: (String) -> Unit) { // Change to pass the new routeId
+        val validStops = _uiState.value.stops.filter { it.name.isNotBlank() }
+        if (_uiState.value.routeName.isBlank() || validStops.isEmpty()) return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
 
-            // Sum up the calculated times
-            val totalTime = _uiState.value.stops.sumOf { it.estimatedTimeMinutes }
-            val totalStops = _uiState.value.stops.size
+            try{
+                val totalTime = validStops.sumOf { it.estimatedTimeMinutes }
 
-            // Rough distance estimate based on stop count if exact math fails
-            val distString = "${totalStops * 0.8} km"
+                var totalKm = 0.0
+                for (i in 0 until validStops.size - 1) {
+                    val p1 = validStops[i].geoPoint
+                    val p2 = validStops[i + 1].geoPoint
+                    if (p1 != null && p2 != null) {
+                        totalKm += calculateDistanceKm(p1, p2)
+                    }
+                }
+                val distString = "%.1f km".format(totalKm)
 
-            val newRoute = Route(
-                name = _uiState.value.routeName,
-                theme = _uiState.value.routeTheme.ifBlank { "Custom" },
-                description = _uiState.value.routeDescription,
-                totalTimeMinutes = totalTime,
-                distance = distString,
-                stops = _uiState.value.stops.filter { it.name.isNotBlank() },
-                authorId = userRepo.getCurrentUser()?.id ?: "",
-                iconId = _uiState.value.selectedIconId // Use the selected icon
-            )
-
-            try {
-                // 1. Create the route in Firestore (returns the new ID)
-                val routeId = routeRepo.createRoute(newRoute)
-
-                // 2. Immediately bookmark it for the user
-                userRepo.bookmarkRoute(routeId)
-
-                onSuccess()
+                val newRoute = Route(
+                    name = _uiState.value.routeName,
+                    theme = _uiState.value.routeTheme.ifBlank { "Custom" },
+                    description = _uiState.value.routeDescription,
+                    totalTimeMinutes = totalTime,
+                    distance = distString,
+                    stops = validStops,
+                    authorId = auth.currentUser?.uid ?: "",
+                    iconId = _uiState.value.selectedIconId
+                )
+                val newRouteId = routeRepo.createRoute(newRoute)
+                withContext(Dispatchers.Main) {
+                    onSuccess(newRouteId)
+                }
             } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
                 _uiState.update { it.copy(isSaving = false) }
             }
         }

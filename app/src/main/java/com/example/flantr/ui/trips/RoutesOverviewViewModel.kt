@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.google.firebase.auth.FirebaseAuth
 
 data class RoutesOverviewUiState(
     val collections: List<Collection> = emptyList(),
@@ -100,23 +101,18 @@ class RoutesOverviewViewModel(
         applyFilters()
     }
 
-    fun deleteRoute(routeId: String) {
-        // TODO: Implement delete logic in Repository
-        // For now, just remove from local list to update UI
-        _uiState.update { state ->
-            val updated = state.allRoutes.filter { it.id != routeId }
-            state.copy(allRoutes = updated)
-        }
-        applyFilters()
-    }
 
     // --- Filtering Logic ---
 
     private fun applyFilters() {
         val state = _uiState.value
+        val currentUid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+
         val query = state.searchQuery.lowercase()
 
         val filtered = state.allRoutes.filter { route ->
+            val isNotMine = route.authorId != currentUid
+
             // 1. Search
             val matchesSearch = query.isEmpty() ||
                     route.name.lowercase().contains(query) ||
@@ -145,7 +141,7 @@ class RoutesOverviewViewModel(
                 }
             }
 
-            matchesSearch && matchesTheme && matchesDuration && matchesDistance
+            isNotMine && matchesTheme && matchesDuration && matchesDistance
         }
 
         _uiState.update { it.copy(filteredRoutes = filtered) }

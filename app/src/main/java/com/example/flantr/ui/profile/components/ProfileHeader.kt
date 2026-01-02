@@ -71,13 +71,6 @@ fun ProfileHeader(state: ProfileUiState) {
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
-
-                // Settings icon
-                Icon(
-                    imageVector = Icons.Default.ManageAccounts,
-                    contentDescription = null,
-                    tint = PurplePrimary
-                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -86,9 +79,9 @@ fun ProfileHeader(state: ProfileUiState) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.fillMaxWidth()
+
             ) {
                 StatBox(state.tripCount.toString(), "Trips", Color(0xFFEFF6FF), Modifier.weight(1f))
-                StatBox(state.placesVisited.toString(), "Places", Color(0xFFFAF5FF), Modifier.weight(1f))
             }
         }
     }

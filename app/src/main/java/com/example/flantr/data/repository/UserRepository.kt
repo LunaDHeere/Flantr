@@ -7,6 +7,9 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.channels.awaitClose
 
 class UserRepository(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
@@ -91,6 +94,23 @@ class UserRepository(
             .delete()
             .await()
 
+    }
+    fun getUserFlow(): Flow<User?> = callbackFlow {
+        val uid = auth.currentUser?.uid
+        if (uid == null) {
+        trySend(null)
+    } else {
+        val listener = usersRef.document(uid).addSnapshotListener { snapshot, _ ->
+            trySend(snapshot?.toObject(User::class.java))
+        }
+        // This stops the listener when the app doesn't need it anymore
+        awaitClose { listener.remove() }
+    }
+
+        val listener = usersRef.document(uid.toString()).addSnapshotListener { snapshot, _ ->
+            trySend(snapshot?.toObject(User::class.java))
+        }
+        awaitClose { listener.remove() }
     }
 
 }

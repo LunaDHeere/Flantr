@@ -186,4 +186,11 @@ class ProfileViewModel(
             SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(Date(timestamp))
         } catch (e: Exception) { "Unknown" }
     }
+
+    // In ProfileViewModel.kt
+    fun refreshData() {
+        loadUser()
+        loadCollections()
+        loadCreatedRoutes()
+    }
 }

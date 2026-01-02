@@ -29,6 +29,7 @@ fun RoutesOverviewScreen(
     viewModel: RoutesOverviewViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val currentUserId: String = "user_123"
 
     // Filter Data Constants
     val themes = listOf("All", "Custom", "Exploration", "Health & Wellness", "Photography", "Food & Drinks", "Art & Culture")
@@ -194,9 +195,7 @@ fun RoutesOverviewScreen(
                 items(uiState.filteredRoutes) { route ->
                     TripRouteCard(
                         route = route,
-                        onStart = { navController.navigate("active_route/${route.id}") },
-                        onEdit = { /* Navigate to Edit */ },
-                        onDelete = { viewModel.deleteRoute(route.id) }
+                        onStart = { navController.navigate("active_route/${route.id}") }
                     )
                 }
             }

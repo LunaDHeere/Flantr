@@ -41,6 +41,9 @@ fun ProfileScreen(
     navController: NavController,
     viewModel: ProfileViewModel = viewModel()
 ) {
+    LaunchedEffect(Unit){
+        viewModel.refreshData()
+    }
     val uiState by viewModel.uiState.collectAsState()
 
     // --- Dialogs ---

@@ -29,7 +29,7 @@ object LocationUtils {
         }
 
         // Simple heuristic: if using public transport for long distances (>1km),
-        // assume 3x speed (bus/tram)
+        // assume 3x speed (bus/tram) (since i don't use google maps api)
         if (includePublicTransport && distanceMeters > 1000) {
             speed *= 3.0f
         }

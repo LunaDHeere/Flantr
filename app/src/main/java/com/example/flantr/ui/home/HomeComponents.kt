@@ -15,12 +15,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.flantr.data.model.Route
 import com.example.flantr.ui.theme.PrimaryGradient
+import com.example.flantr.R
+
 
 /* ---------- HEADER ---------- */
 
