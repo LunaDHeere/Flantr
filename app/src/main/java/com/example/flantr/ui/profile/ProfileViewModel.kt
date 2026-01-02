@@ -20,7 +20,6 @@ data class ProfileUiState(
     val email: String = "",
     val memberSince: String = "",
     val tripCount: Int = 0,
-    val placesVisited: Int = 0,
 
     // Transportation
     val includePublicTransport: Boolean = true,
@@ -58,34 +57,35 @@ class ProfileViewModel(
     val uiState: StateFlow<ProfileUiState> = _uiState
 
     init {
-        loadUser()
+        observeUser()
         loadCollections()
         loadCreatedRoutes()
     }
 
-    private fun loadUser() {
+    private fun observeUser() {
         viewModelScope.launch {
-            val user = userRepo.getCurrentUser()
-            user?.let {
-                _uiState.value = _uiState.value.copy(
-                    id = it.id,
-                    name = it.name.ifEmpty { "Unknown" },
-                    email = it.email,
-                    memberSince = formatDate(it.memberSince),
-                    tripCount = it.tripCount,
-                    placesVisited = it.placesVisited,
-
-                    includePublicTransport = it.includePublicTransport,
-                    walkingPace = it.walkingPace,
-                    maxWalkingDistance = it.maxWalkingDistance,
-                    accessibilityMode = it.accessibilityMode,
-                    avoidStairs = it.avoidStairs,
-                    preferScenic = it.preferScenic,
-                    notifyRouteReminders = it.notifyRouteReminders,
-                    notifyNewRoutes = it.notifyNewRoutes,
-                    notifyNearbyPlaces = it.notifyNearbyPlaces,
-                    appTheme = it.appTheme
-                )
+            userRepo.getUserFlow().collect{ user ->
+                user?.let{
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            id = it.id,
+                            name = it.name.ifEmpty { "Unknown" },
+                            email = it.email,
+                            memberSince = formatDate(it.memberSince),
+                            tripCount = it.tripCount,
+                            includePublicTransport = it.includePublicTransport,
+                            walkingPace = it.walkingPace,
+                            maxWalkingDistance = it.maxWalkingDistance,
+                            accessibilityMode = it.accessibilityMode,
+                            avoidStairs = it.avoidStairs,
+                            preferScenic = it.preferScenic,
+                            notifyRouteReminders = it.notifyRouteReminders,
+                            notifyNewRoutes = it.notifyNewRoutes,
+                            notifyNearbyPlaces = it.notifyNearbyPlaces,
+                            appTheme = it.appTheme
+                        )
+                    }
+                }
             }
         }
     }
@@ -189,7 +189,7 @@ class ProfileViewModel(
 
     // In ProfileViewModel.kt
     fun refreshData() {
-        loadUser()
+        observeUser()
         loadCollections()
         loadCreatedRoutes()
     }

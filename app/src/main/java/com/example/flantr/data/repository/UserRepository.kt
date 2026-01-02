@@ -98,19 +98,27 @@ class UserRepository(
     fun getUserFlow(): Flow<User?> = callbackFlow {
         val uid = auth.currentUser?.uid
         if (uid == null) {
-        trySend(null)
-    } else {
-        val listener = usersRef.document(uid).addSnapshotListener { snapshot, _ ->
-            trySend(snapshot?.toObject(User::class.java))
+            trySend(null)
+            return@callbackFlow
+    }
+
+        val listener = usersRef.document(uid).addSnapshotListener { snapshot, error ->
+            if ( error != null){
+                return@addSnapshotListener
+            }
+            val user = snapshot?.toObject(User::class.java)
+            trySend(user)
         }
-        // This stops the listener when the app doesn't need it anymore
         awaitClose { listener.remove() }
     }
 
-        val listener = usersRef.document(uid.toString()).addSnapshotListener { snapshot, _ ->
-            trySend(snapshot?.toObject(User::class.java))
-        }
-        awaitClose { listener.remove() }
+    suspend fun incrementTripCount(userId: String) {
+        val user = getCurrentUser() ?: return
+        val newCount = user.tripCount + 1
+
+        db.collection("users").document(userId)
+            .update("tripCount", newCount)
+            .await()
     }
 
 }

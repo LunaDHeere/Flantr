@@ -6,7 +6,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -17,7 +16,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.flantr.ui.profile.ProfileUiState
 import com.example.flantr.ui.theme.PrimaryGradient
-import com.example.flantr.ui.theme.PurplePrimary
 
 @Composable
 fun ProfileHeader(state: ProfileUiState) {

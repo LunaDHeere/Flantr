@@ -147,92 +147,12 @@ fun ProfileScreen(
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
-
-                    Text("Max Walking Distance: ${uiState.maxWalkingDistance.toInt()} miles", fontWeight = FontWeight.Medium)
-                    Slider(
-                        value = uiState.maxWalkingDistance,
-                        onValueChange = { viewModel.setMaxDistance(it) },
-                        valueRange = 1f..10f,
-                        steps = 17,
-                        colors = SliderDefaults.colors(
-                            thumbColor = PurplePrimary,
-                            activeTrackColor = PurplePrimary
-                        )
-                    )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text("1 mile", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                         Text("10 miles", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                    }
-                }
-            }
-
-            // 3. Accessibility
-            item {
-                ProfileSection(title = "Accessibility", icon = Icons.Default.AccessibilityNew) {
-                    SettingsRow(
-                        title = "Accessibility Mode",
-                        subtitle = "Prioritize wheelchair-accessible routes",
-                        control = {
-                            FlantrSwitch(uiState.accessibilityMode) {
-                                viewModel.updateBoolean("accessibilityMode", !uiState.accessibilityMode)
-                            }
-                        }
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    SettingsRow(
-                        title = "Avoid Stairs",
-                        subtitle = "Find alternative routes without stairs",
-                        control = {
-                            FlantrSwitch(uiState.avoidStairs) {
-                                viewModel.updateBoolean("avoidStairs", !uiState.avoidStairs)
-                            }
-                        }
-                    )
-                }
-            }
-
-            // 4. Route Preferences
-            item {
-                ProfileSection(title = "Route Preferences", icon = Icons.Default.Map) {
-                    SettingsRow(
-                        title = "Prefer Scenic Routes",
-                        subtitle = "Choose routes through parks and scenic areas",
-                        control = {
-                            FlantrSwitch(uiState.preferScenic) {
-                                viewModel.updateBoolean("preferScenic", !uiState.preferScenic)
-                            }
-                        }
-                    )
-                }
-            }
-
-            // 5. Notifications
-            item {
-                ProfileSection(title = "Notifications", icon = Icons.Default.Notifications) {
-                    SettingsRow("Route Reminders", "Get notified about upcoming trips") {
-                        FlantrSwitch(uiState.notifyRouteReminders) { viewModel.updateBoolean("notifyRouteReminders", !uiState.notifyRouteReminders) }
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    SettingsRow("New Routes", "Discover newly added routes") {
-                        FlantrSwitch(uiState.notifyNewRoutes) { viewModel.updateBoolean("notifyNewRoutes", !uiState.notifyNewRoutes) }
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    SettingsRow("Nearby Places", "Suggestions based on your location") {
-                        FlantrSwitch(uiState.notifyNearbyPlaces) { viewModel.updateBoolean("notifyNearbyPlaces", !uiState.notifyNearbyPlaces) }
-                    }
-                }
-            }
-
-            // 6. Appearance
-            item {
-                ProfileSection(title = "Appearance", icon = Icons.Default.LightMode) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ThemeButton("Light", "light", Icons.Default.LightMode, uiState.appTheme) { viewModel.setTheme(it) }
-                        ThemeButton("Dark", "dark", Icons.Default.DarkMode, uiState.appTheme) { viewModel.setTheme(it) }
-                        ThemeButton("Auto", "auto", Icons.Default.Bolt, uiState.appTheme) { viewModel.setTheme(it) }
                     }
                 }
             }

@@ -7,7 +7,6 @@ data class User(
     // Stats
     val memberSince: Long = System.currentTimeMillis(),
     val tripCount: Int = 0,
-    val placesVisited: Int = 0,
 
     // Preferences - Transportation
     val includePublicTransport: Boolean = true,
