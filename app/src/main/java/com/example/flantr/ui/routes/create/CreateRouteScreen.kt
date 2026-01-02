@@ -346,21 +346,6 @@ fun EditableStopItem(
 
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = stop.estimatedTimeMinutes.toString(),
-                        onValueChange = {
-                            onUpdate(
-                                stop.copy(
-                                    estimatedTimeMinutes = it.toIntOrNull() ?: 0
-                                )
-                            )
-                        },
-
-                        label = { Text("Mins") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f)
-                    )
-
                     Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.End) {
                         IconButton(onClick = onMoveUp, enabled = !isFirst) {
                             Icon(Icons.Default.ArrowUpward, contentDescription = "Up")

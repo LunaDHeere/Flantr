@@ -139,7 +139,6 @@ fun RoutesOverviewScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-
             // Collections Section
             if (uiState.collections.isNotEmpty() && !hasActiveFilters && uiState.searchQuery.isEmpty()) {
                 item {
@@ -195,6 +194,8 @@ fun RoutesOverviewScreen(
                 items(uiState.filteredRoutes) { route ->
                     TripRouteCard(
                         route = route,
+                        isFavourited = uiState.favouritedRouteIds.contains(route.id) ,
+                        onToggleFavourite = { viewModel.toggleFavourite(route.id) },
                         onStart = { navController.navigate("active_route/${route.id}") }
                     )
                 }

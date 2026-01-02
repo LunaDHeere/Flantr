@@ -146,7 +146,7 @@ fun FavouritesScreen(
 
                             CollectionCard(
                                 title = collection.title,
-                                count = "${collection.routeIds.size} routes",
+                                count = collection.routeIds.size,
                                 desc = collection.description,
                                 gradient = gradient,
                                 buttonColor = buttonColor,

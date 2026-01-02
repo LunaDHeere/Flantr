@@ -113,6 +113,8 @@ fun TripCollectionCard(
 @Composable
 fun TripRouteCard(
     route: Route,
+    isFavourited: Boolean,
+    onToggleFavourite: () -> Unit,
     onStart: () -> Unit,
 ) {
     Card(
@@ -122,17 +124,23 @@ fun TripRouteCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(Modifier.padding(16.dp)) {
-            // Header
             Row(verticalAlignment = Alignment.Top) {
                 Column(Modifier.weight(1f)) {
                     Text(route.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text(route.description, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                 }
             }
+            IconButton(onClick = onToggleFavourite) {
+                Icon(
+                    imageVector = if (isFavourited) Icons.Filled.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = "Favourite",
+                    tint = if (isFavourited) Color(0xFFEF4444) else Color.Gray
+                )
+            }
+
 
             Spacer(Modifier.height(16.dp))
 
-            // Stats
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 TripStat(Icons.Default.Place, "${route.stops.size} stops")
                 TripStat(Icons.Default.Schedule, "${route.totalTimeMinutes / 60}h ${route.totalTimeMinutes % 60}m")
@@ -141,7 +149,6 @@ fun TripRouteCard(
 
             Spacer(Modifier.height(16.dp))
 
-            // Stops Preview
             Surface(
                 color = Color(0xFFF9FAFB),
                 shape = RoundedCornerShape(12.dp),

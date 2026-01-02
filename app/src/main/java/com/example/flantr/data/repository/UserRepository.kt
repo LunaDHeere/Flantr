@@ -31,10 +31,22 @@ class UserRepository(
         usersRef.document(uid).update(updates).await()
     }
 
+    suspend fun getBookmarkedRouteIds(): Set<String> {
+        val user = getCurrentUser()
+        return user?.savedRouteIds?.toSet() ?: emptySet()
+    }
+
+    suspend fun updateBookmarkedRoutes(newFavs: Set<String>) {
+        val uid = auth.currentUser?.uid ?: return
+
+        db.collection("users").document(uid )
+            .update("savedRouteIds", newFavs.toList())
+            .await()
+    }
+
     suspend fun bookmarkRoute(routeId: String) {
         val userId = auth.currentUser?.uid ?: return
 
-        // ArrayUnion adds the element ONLY if it doesn't exist yet (no duplicates)
         db.collection("users").document(userId)
             .update("savedRouteIds", com.google.firebase.firestore.FieldValue.arrayUnion(routeId))
             .await()
@@ -47,8 +59,6 @@ class UserRepository(
             .update("savedRouteIds", com.google.firebase.firestore.FieldValue.arrayRemove(routeId))
             .await()
     }
-
-    // shouldn't this be added to a seperate CollectionRepository?
 
     suspend fun createCollection(collection: Collection) {
         val userId = auth.currentUser?.uid ?: return

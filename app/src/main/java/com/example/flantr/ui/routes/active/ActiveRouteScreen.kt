@@ -61,11 +61,15 @@ fun ActiveRouteScreen(
         viewModel.startNavigation(route)
         onOpenMap()
     }
-
     val progress by animateFloatAsState(
-        targetValue = if (route.stops.isNotEmpty())
-            uiState.completedStops.size.toFloat() / route.stops.size
-        else 0f,
+        targetValue = if (stops.isNotEmpty()) {
+            val totalStops = stops.size
+            val indexProgress = (currentStopIndex.toFloat()) / totalStops
+            val isCurrentCompleted = uiState.completedStops.contains(stops[currentStopIndex].id)
+            val completionBoost = if (isCurrentCompleted) 1f / totalStops else 0f
+
+            (indexProgress + completionBoost).coerceAtMost(1f)
+        } else 0f,
         label = "progress"
     )
 
@@ -105,7 +109,7 @@ fun ActiveRouteScreen(
         topBar = {
             ActiveRouteTopBar(
                 currentIndex = currentStopIndex,
-                totalStops = route.stops.size,
+                totalStops = stops.size,
                 progress = progress,
                 onExit = onExit
             )

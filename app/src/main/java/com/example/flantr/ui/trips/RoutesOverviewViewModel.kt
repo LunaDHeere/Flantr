@@ -24,6 +24,7 @@ data class RoutesOverviewUiState(
     val selectedTheme: String = "All",
     val selectedDuration: String = "All",
     val selectedDistance: String = "All",
+    val favouritedRouteIds: Set<String> = emptySet(),
 
     val isLoading: Boolean = false
 )
@@ -44,19 +45,17 @@ class RoutesOverviewViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            // 1. Load Collections
             val cols = userRepo.getUserCollections()
-
-            // 2. Load User's Saved/Created Routes
-            // For now fetching ALL routes, in real app fetch user.savedRouteIds
             val routes = routeRepo.getAllRoutes()
+            val favs = userRepo.getBookmarkedRouteIds()
 
             _uiState.update {
                 it.copy(
                     collections = cols,
                     allRoutes = routes,
-                    filteredRoutes = routes, // Initially show all
-                    isLoading = false
+                    filteredRoutes = routes,
+                    isLoading = false,
+                    favouritedRouteIds = favs
                 )
             }
             applyFilters()
@@ -65,6 +64,20 @@ class RoutesOverviewViewModel(
 
     // --- Actions ---
 
+    fun toggleFavourite(routeId: String) {
+        val currentFavs = _uiState.value.favouritedRouteIds
+        val isRemoving = currentFavs.contains(routeId)
+        val newFavs = if (isRemoving) currentFavs - routeId else currentFavs + routeId
+
+        _uiState.update { it.copy(favouritedRouteIds = newFavs) }
+
+        viewModelScope.launch {
+            try {
+                userRepo.updateBookmarkedRoutes(newFavs)
+            } catch (e: Exception) {
+            }
+        }
+    }
     fun toggleFilters() {
         _uiState.update { it.copy(showFilters = !it.showFilters) }
     }
