@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.update
 data class FavouritesUiState(
     val isLoading: Boolean = true,
     val favouriteRoutes: List<Route> = emptyList(),
+    val collections: List<com.example.flantr.data.model.Collection> = emptyList(),
     val selectedCategory: String = "All"
 )
 
@@ -40,10 +41,13 @@ class FavouritesViewModel(
                     routeRepo.getRouteById(id)
                 }
 
+                val userCollections = userRepo.getUserCollections()
+
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        favouriteRoutes = routes
+                        favouriteRoutes = routes,
+                        collections = userCollections
                     )
                 }
             }

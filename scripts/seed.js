@@ -19,27 +19,23 @@ async function seedUsers() {
   }
   console.log("✅ Users seeded");
 }
-
 async function seedRoutes() {
   for (const route of routes) {
-    const validStops = route.stops && route.stops.length > 0 ? route.stops : [{
-      id: "default-stop",
-      name: "Starting Point",
-      address: "City Center",
-      description: "Auto-generated starting point",
-      estimatedTimeMinutes: 15,
-      geoPoint: { lat: 51.2194, lng: 4.4025 }
-    }];
+    // Ensure we have a default image if one isn't provided in the JSON
+    const imageUrl = route.imageUrl || "https://images.unsplash.com/photo-1449034446853-66c86144b0ad?auto=format&fit=crop&w=800&q=80";
+
+    const validStops = route.stops && route.stops.length > 0 ? route.stops : [/* ... your default stop ... */];
 
     const ref = db.collection("routes").doc();
     await ref.set({
       ...route,
-      id: ref.id,
+      id: ref.id, // This is good, it keeps it consistent with Firestore ID
+      imageUrl: imageUrl, // Force ensure this is set
       stops: validStops,
       totalTimeMinutes: validStops.reduce((acc, s) => acc + s.estimatedTimeMinutes, 0)
     });
   }
-  console.log("✅ Routes seeded with min 1 stop");
+  console.log("✅ Routes seeded with fixed image URLs");
 }
 
 async function run() {

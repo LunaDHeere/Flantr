@@ -39,7 +39,6 @@ fun FavouritesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Filter logic
     val displayRoutes = if (uiState.selectedCategory == "All") {
         uiState.favouriteRoutes
     } else {
@@ -116,12 +115,10 @@ fun FavouritesScreen(
             if (uiState.isLoading) {
                 item { Text("Loading...", modifier = Modifier.padding(16.dp)) }
             } else if (displayRoutes.isEmpty()) {
-                // Empty State
                 item {
                     EmptyFavouritesState()
                 }
             } else {
-                // Route Cards
                 items(displayRoutes) { route ->
                     FavouriteRouteCard(
                         route = route,
@@ -131,29 +128,33 @@ fun FavouritesScreen(
                 }
             }
 
-            // Collections Section (Hardcoded for now as per design)
-            if (!uiState.isLoading) {
+            if (!uiState.isLoading && uiState.collections.isNotEmpty()) {
                 item {
-                    Text("Collections", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        CollectionCard(
-                            title = "Coffee Spots",
-                            count = "8 places",
-                            desc = "My favorite coffee shops",
-                            gradient = Brush.linearGradient(listOf(Color(0xFF3B82F6), Color(0xFF9333EA))),
-                            buttonColor = Color(0xFF9333EA),
-                            modifier = Modifier.weight(1f)
-                        )
-                        CollectionCard(
-                            title = "Must-See Art",
-                            count = "12 places",
-                            desc = "Best galleries & street art",
-                            gradient = Brush.linearGradient(listOf(Color(0xFFEC4899), Color(0xFFF97316))),
-                            buttonColor = Color(0xFFF97316),
-                            modifier = Modifier.weight(1f)
-                        )
+                    Text(
+                        "Collections",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp)
+                    ) {
+                        items(uiState.collections) { collection ->
+                            val (gradient, buttonColor) = getCollectionVisuals(collection.color)
+
+                            CollectionCard(
+                                title = collection.title,
+                                count = "${collection.routeIds.size} routes",
+                                desc = collection.description,
+                                gradient = gradient,
+                                buttonColor = buttonColor,
+                                modifier = Modifier.width(280.dp)
+                            )
+                        }
                     }
-                    Spacer(Modifier.height(60.dp)) // Space for bottom bar
+                    Spacer(Modifier.height(60.dp))
                 }
             }
         }
@@ -177,6 +178,17 @@ fun CategoryChip(label: String, isSelected: Boolean, onClick: () -> Unit) {
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Text(label, color = textColor, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
+fun getCollectionVisuals(colorName: String): Pair<Brush, Color> {
+    return when (colorName.lowercase()) {
+        "blue" -> Brush.linearGradient(listOf(Color(0xFF3B82F6), Color(0xFF2563EB))) to Color(0xFF1E40AF)
+        "purple" -> Brush.linearGradient(listOf(Color(0xFF8B5CF6), Color(0xFF7C3AED))) to Color(0xFF6D28D9)
+        "pink" -> Brush.linearGradient(listOf(Color(0xFFEC4899), Color(0xFFDB2777))) to Color(0xFFBE185D)
+        "orange" -> Brush.linearGradient(listOf(Color(0xFFF97316), Color(0xFFEA580C))) to Color(0xFFC2410C)
+        else -> Brush.linearGradient(listOf(Color(0xFF6B7280), Color(0xFF4B5563))) to Color(0xFF374151)
     }
 }
 
