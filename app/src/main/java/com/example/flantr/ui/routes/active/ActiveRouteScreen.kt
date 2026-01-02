@@ -225,7 +225,10 @@ fun ActiveRouteScreen(
 
             /* -------- Owner Actions -------- */
             item {
-                if (route.authorId == uiState.currentUserId) {
+                val canEdit = uiState.currentUserId.isNotEmpty() &&
+                        route.authorId.isNotEmpty() &&
+                        route.authorId == uiState.currentUserId
+                if (canEdit) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()

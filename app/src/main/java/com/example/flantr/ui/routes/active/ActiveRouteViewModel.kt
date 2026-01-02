@@ -41,9 +41,13 @@ class ActiveRouteViewModel(application: Application ) : AndroidViewModel(applica
     val uiState = _uiState.asStateFlow()
 
     init {
-        val firebaseUser = auth.currentUser
-        _uiState.update { it.copy(currentUserId = firebaseUser?.uid ?: "") }
-
+        viewModelScope.launch {
+            // Use a listener to ensure we always have the latest UID
+            FirebaseAuth.getInstance().addAuthStateListener { firebaseAuth ->
+                val uid = firebaseAuth.currentUser?.uid ?: ""
+                _uiState.update { it.copy(currentUserId = uid) }
+            }
+        }
         observeUserSettings()
     }
     /* -------------------- User Settings logic -------------------- */
@@ -80,7 +84,13 @@ class ActiveRouteViewModel(application: Application ) : AndroidViewModel(applica
     }
 
     fun stopNavigationOnMap() {
-        _uiState.update { it.copy(isMapNavigationActive = false) }
+        _uiState.update { it.copy(
+            isMapNavigationActive = false,
+            activeRoute = null,
+            currentStopIndex = 0,
+            timeToFirstStop = null,
+            routePoints = emptyList()
+        )}
     }
 
     /* -------------------- Stops -------------------- */
@@ -93,8 +103,12 @@ class ActiveRouteViewModel(application: Application ) : AndroidViewModel(applica
             if (index !in stops.indices) return@update state
 
             val stopId = stops[index].id
+            val alreadyCompleted = state.completedStops.contains(stopId)
             val newCompleted = state.completedStops + stopId
 
+            if (index == stops.lastIndex && !alreadyCompleted) {
+                incrementUserTripCount()
+            }
             // Advance index atomically if not at the end
             val nextIndex = if (index < stops.lastIndex) index + 1 else index
 
@@ -168,6 +182,8 @@ class ActiveRouteViewModel(application: Application ) : AndroidViewModel(applica
     /* -------------------- OSRM Route -------------------- */
 
     private fun loadRealRoute(stops: List<Stop>, context: Context) {
+        _uiState.update { it.copy(routePoints = emptyList(), calculatedDurations = emptyMap()) }
+
         viewModelScope.launch(Dispatchers.IO) {
             val user = userRepo.getCurrentUser() ?: return@launch
             val useTransport = user.includePublicTransport
@@ -219,10 +235,35 @@ class ActiveRouteViewModel(application: Application ) : AndroidViewModel(applica
         }
     }
     fun loadRoute(routeId: String) {
+        if (_uiState.value.activeRoute?.id == routeId) return
+
         viewModelScope.launch {
             val route = routeRepo.getRouteById(routeId)
             if (route != null) {
-                _uiState.update { it.copy(activeRoute = route) }
+                _uiState.update { currentState ->
+                ActiveRouteUiState(
+                    currentUserId = currentState.currentUserId,
+                    activeRoute = route,
+                    currentStopIndex = 0,
+                    completedStops = emptySet(),
+                    timeToFirstStop = null,
+                    routePoints = emptyList(),
+                    calculatedDurations = emptyMap()
+
+                )}
+            }
+        }
+    }
+    fun resetRouteState() {
+        _uiState.update {
+            ActiveRouteUiState(currentUserId = it.currentUserId)
+        }
+    }
+    private fun incrementUserTripCount() {
+        viewModelScope.launch {
+            val userId = _uiState.value.currentUserId
+            if (userId.isNotEmpty()) {
+                userRepo.incrementTripCount(userId)
             }
         }
     }

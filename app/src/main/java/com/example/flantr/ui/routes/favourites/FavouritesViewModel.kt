@@ -8,6 +8,7 @@ import com.example.flantr.data.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.update
 
 data class FavouritesUiState(
     val isLoading: Boolean = true,
@@ -24,26 +25,28 @@ class FavouritesViewModel(
     val uiState: StateFlow<FavouritesUiState> = _uiState
 
     init {
-        loadFavourites()
+        observeFavourites()
     }
 
-    private fun loadFavourites() {
+    private fun observeFavourites() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
+            userRepo.getUserFlow().collect { user ->
+                _uiState.update { it.copy(isLoading = true) }
 
-            // 1. Get the current user to find the list of IDs
-            val user = userRepo.getCurrentUser()
-            val savedIds = user?.savedRouteIds ?: emptyList()
+                val savedIds = user?.savedRouteIds ?: emptyList()
 
-            // 2. Fetch the actual Route objects for those IDs
-            val routes = savedIds.mapNotNull { id ->
-                routeRepo.getRouteById(id)
+                // Fetch the route details for the IDs
+                val routes = savedIds.mapNotNull { id ->
+                    routeRepo.getRouteById(id)
+                }
+
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        favouriteRoutes = routes
+                    )
+                }
             }
-
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                favouriteRoutes = routes
-            )
         }
     }
 
